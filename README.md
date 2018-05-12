@@ -23,18 +23,18 @@ usage: struct2ts [<flags>] <pkg.struct>...
 
 Flags:
 	-h, --help                  Show context-sensitive help (also try --help-long and --help-man).
-		--indent="\t"           output indentation
-	-m, --mark-optional-fields  add `?` to fields with omitempty
-	-C, --no-ctor               don't generate a constructor
-	-T, --no-toObject           don't generate a Class.toObject() method
-	-D, --no-date               don't automatically handle time.Unix () <-> JS Date()
-	-N, --no-default-values     don't assign default/zero values in the ctor
-	-i, --interface             only generate an interface (disables all the other options)
-	-k, --keep-temp             keep the generated tmp file
+		--indent="\t"           Output indentation.
+	-m, --mark-optional-fields  Add `?` to fields with omitempty.
+	-C, --no-ctor               Don't generate a ctor.
+	-T, --no-toObject           Don't generate a Class.toObject() method.
+	-D, --no-date               Don't automatically handle time.Unix () <-> JS Date().
+	-N, --no-default-values     Don't assign default/zero values in the ctor.
+	-i, --interface             Only generate an interface (disables all the other options).
+	-k, --keep-temp             Keep the generated temporary Go file.
 	-V, --version               Show application version.
 
 Args:
-	<pkg.struct>  list of structs to convert
+	<pkg.struct>  List of structs to convert (github.com/you/auth/users.User or just users.User).
 
 ┏━ oneofone@Ava ❨✪/O/struct2ts❩ ❨master ⚡❩
 ┗━━➤ struct2ts github.com/OneOfOne/struct2ts.Options # or just struct2ts.Options and /x/imports will handle it.
@@ -83,6 +83,8 @@ export class Options {
 ## TODO
 
 * Use [xast](https://github.com/OneOfOne/struct2ts) to skip reflection.
+* Support ES6.
+* Support annoymous structs.
 
 ## License
 

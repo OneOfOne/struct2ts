@@ -25,17 +25,18 @@ var (
 )
 
 func init() {
-	KP.Flag("indent", "output indentation").Default("\t").StringVar(&opts.Indent)
-	KP.Flag("mark-optional-fields", "add `?` to fields with omitempty").Short('m').BoolVar(&opts.MarkOptional)
-	KP.Flag("no-ctor", "don't generate a constructor").Short('C').BoolVar(&opts.NoConstructor)
-	KP.Flag("no-toObject", "don't generate a Class.toObject() method").Short('T').BoolVar(&opts.NoToObject)
-	KP.Flag("no-date", "don't automatically handle time.Unix () <-> JS Date()").Short('D').BoolVar(&opts.NoDate)
-	KP.Flag("no-default-values", "don't assign default/zero values in the ctor").Short('N').BoolVar(&opts.NoAssignDefaults)
-	KP.Flag("interface", "only generate an interface (disables all the other options)").Short('i').BoolVar(&opts.InterfaceOnly)
+	KP.Flag("indent", "Output indentation.").Default("\t").StringVar(&opts.Indent)
+	KP.Flag("mark-optional-fields", "Add `?` to fields with omitempty.").Short('m').BoolVar(&opts.MarkOptional)
+	KP.Flag("no-ctor", "Don't generate a ctor.").Short('C').BoolVar(&opts.NoConstructor)
+	KP.Flag("no-toObject", "Don't generate a Class.toObject() method.").Short('T').BoolVar(&opts.NoToObject)
+	KP.Flag("no-date", "Don't automatically handle time.Unix () <-> JS Date().").Short('D').BoolVar(&opts.NoDate)
+	KP.Flag("no-default-values", "Don't assign default/zero values in the ctor.").Short('N').BoolVar(&opts.NoAssignDefaults)
+	KP.Flag("interface", "Only generate an interface (disables all the other options).").Short('i').BoolVar(&opts.InterfaceOnly)
 
-	KP.Flag("keep-temp", "keep the generated tmp file").Short('k').BoolVar(&keepTemp)
+	KP.Flag("keep-temp", "Keep the generated temporary Go file.").Short('k').BoolVar(&keepTemp)
 
-	KP.Arg("pkg.struct", "list of structs to convert").Required().HintOptions("github.com/you/auth/users.User").StringsVar(&types)
+	KP.Arg("pkg.struct", "List of structs to convert (github.com/you/auth/users.User or just users.User).").
+		Required().StringsVar(&types)
 }
 
 type M = map[string]interface{}

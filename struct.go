@@ -2,7 +2,9 @@ package struct2ts
 
 import (
 	"fmt"
+	"go/ast"
 	"io"
+	"log"
 	"reflect"
 	"strings"
 )
@@ -162,6 +164,15 @@ func (f *Field) DefaultValue() (def string) {
 }
 
 func (f *Field) setProps(sf reflect.StructField) (ignore bool) {
+	if len(sf.Name) > 0 && !ast.IsExported(sf.Name) {
+		return true
+	}
+
+	if sf.Anonymous {
+		log.Println("anonymous structs aren't supported, yet.")
+		return true
+	}
+
 	t := strings.Split(sf.Tag.Get("json"), ",")
 	if len(t) == 0 || len(t) == 1 && t[0] == "" {
 		t = strings.Split(sf.Tag.Get("ts"), ",")
