@@ -72,7 +72,7 @@ func main() {
 		log.Panic(err)
 	}
 
-	log.Printf("executing go run %s", f.Name())
+	log.Printf("executing: go run %s", f.Name())
 	cmd := exec.Command("go", "run", f.Name())
 
 	cmd.Stderr = os.Stderr

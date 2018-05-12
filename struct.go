@@ -8,10 +8,11 @@ import (
 )
 
 var zeroValues = map[string]string{
-	"number": "0",
-	"string": "''",
-	"object": "{}",
-	"array":  "[]",
+	"number":  "0",
+	"boolean": "false",
+	"string":  "''",
+	"object":  "{}",
+	"array":   "[]",
 }
 
 type Struct struct {
@@ -162,11 +163,11 @@ func (f *Field) DefaultValue() (def string) {
 
 func (f *Field) setProps(sf reflect.StructField) (ignore bool) {
 	t := strings.Split(sf.Tag.Get("json"), ",")
-	if len(t) == 0 {
+	if len(t) == 0 || len(t) == 1 && t[0] == "" {
 		t = strings.Split(sf.Tag.Get("ts"), ",")
 	}
 
-	if len(t) == 0 {
+	if len(t) == 0 || len(t) == 1 && t[0] == "" {
 		f.Name = sf.Name
 		return
 	}
