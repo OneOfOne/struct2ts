@@ -26,8 +26,14 @@ func (s *Struct) RenderTo(opts *Options, w io.Writer) (err error) {
 		return
 	}
 
-	if _, err = fmt.Fprintf(w, "export class %s {\n", s.Name); err != nil {
-		return
+	if opts.InterfaceOnly {
+		if _, err = fmt.Fprintf(w, "export interface %s {\n", s.Name); err != nil {
+			return
+		}
+	} else {
+		if _, err = fmt.Fprintf(w, "export class %s {\n", s.Name); err != nil {
+			return
+		}
 	}
 
 	if err = s.RenderFields(opts, w); err != nil {
@@ -52,13 +58,17 @@ func (s *Struct) RenderFields(opts *Options, w io.Writer) (err error) {
 		if f.IsOptional && opts.MarkOptional {
 			name += "?"
 		}
-		_, err = fmt.Fprintf(w, "%s%s: %s = %s;\n", opts.indents[1], name, f.Type(opts.NoDate, false), f.DefaultValue())
+		if opts.InterfaceOnly || opts.NoAssignDefaults {
+			_, err = fmt.Fprintf(w, "%s%s: %s;\n", opts.indents[1], name, f.Type(opts.NoDate, false))
+		} else {
+			_, err = fmt.Fprintf(w, "%s%s: %s = %s;\n", opts.indents[1], name, f.Type(opts.NoDate, false), f.DefaultValue())
+		}
 	}
 	return
 }
 
 func (s *Struct) RenderConstructor(opts *Options, w io.Writer) (err error) {
-	if opts.NoConstructor {
+	if opts.NoConstructor || opts.InterfaceOnly {
 		return
 	}
 
@@ -81,7 +91,7 @@ func (s *Struct) RenderConstructor(opts *Options, w io.Writer) (err error) {
 }
 
 func (s *Struct) RenderToObject(opts *Options, w io.Writer) (err error) {
-	if opts.NoToObject {
+	if opts.NoToObject || opts.InterfaceOnly {
 		return
 	}
 	fmt.Fprintf(w, "\n%stoObject(): { [key:string]: any } {\n", opts.indents[1])
@@ -119,7 +129,9 @@ func (f *Field) Type(noDate, noSuffix bool) (out string) {
 	case "map":
 		out = fmt.Sprintf("{ [key: %s]: %s }", f.KeyType, f.ValType)
 	case "object":
-		out = f.ValType
+		if out = f.ValType; out == "" {
+			out = "any"
+		}
 	}
 
 	if f.IsDate && !noDate {

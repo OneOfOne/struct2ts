@@ -10,7 +10,11 @@ import (
 )
 
 type Options struct {
-	Indent        string
+	Indent string
+
+	NoAssignDefaults bool
+	InterfaceOnly    bool
+
 	MarkOptional  bool
 	NoConstructor bool
 	NoToObject    bool
@@ -119,6 +123,8 @@ func (s *StructToTS) addType(t reflect.Type) (out *Struct) {
 			tf.TsType, tf.ValType = "object", stripType(sft)
 
 			s.addType(sft)
+		case k == reflect.Interface:
+			tf.TsType, tf.ValType = "object", ""
 
 		default:
 			log.Println("unhandled", k, sft)
