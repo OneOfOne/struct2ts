@@ -1,6 +1,6 @@
 # struct2ts [![GoDoc](https://godoc.org/github.com/OneOfOne/struct2ts?status.svg)](https://godoc.org/github.com/OneOfOne/struct2ts)
 
-A extremely simple and powerful Go struct to Typescript Class generator.
+An extremely simple and powerful Go struct to Typescript Class generator.
 
 Inspired by [tkrajina/typescriptify-golang-structs](https://github.com/tkrajina/typescriptify-golang-structs).
 
