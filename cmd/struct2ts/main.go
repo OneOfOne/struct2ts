@@ -17,8 +17,9 @@ import (
 const version = "v0.0.1"
 
 var (
-	opts  s2ts.Options
-	types []string
+	opts     s2ts.Options
+	types    []string
+	keepTemp bool
 
 	tmpl = template.Must(template.New("").Parse(fileTmpl))
 )
@@ -29,8 +30,10 @@ func init() {
 	KP.Flag("no-ctor", "don't generate a constructor").Short('C').BoolVar(&opts.NoConstructor)
 	KP.Flag("no-toObject", "don't generate a Class.toObject() method").Short('T').BoolVar(&opts.NoToObject)
 	KP.Flag("no-date", "don't automatically handle time.Unix () <-> JS Date()").Short('D').BoolVar(&opts.NoDate)
-	KP.Flag("no-default-values", "don't assign default/zero values in the ctor").Short('N').BoolVar(&opts.NoDate)
+	KP.Flag("no-default-values", "don't assign default/zero values in the ctor").Short('N').BoolVar(&opts.NoAssignDefaults)
 	KP.Flag("interface", "only generate an interface (disables all the other options)").Short('i').BoolVar(&opts.InterfaceOnly)
+
+	KP.Flag("keep-temp", "keep the generated tmp file").Short('k').BoolVar(&keepTemp)
 
 	KP.Arg("pkg.struct", "list of structs to convert").Required().HintOptions("github.com/you/auth/users.User").StringsVar(&types)
 }
@@ -57,7 +60,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer func() {
-		if recover() == nil {
+		if recover() == nil && !keepTemp {
 			os.Remove(f.Name())
 		}
 	}()
