@@ -14,11 +14,17 @@ import (
 	KP "gopkg.in/alecthomas/kingpin.v2"
 )
 
-const version = "v0.0.1"
+const version = "v0.0.3"
 
 var (
-	opts     s2ts.Options
-	types    []string
+	opts  s2ts.Options
+	types []string
+
+	outFile string
+
+	srcOnly bool
+	pkgName string
+
 	keepTemp bool
 
 	tmpl = template.Must(template.New("").Parse(fileTmpl))
@@ -33,7 +39,13 @@ func init() {
 	KP.Flag("no-default-values", "Don't assign default/zero values in the ctor.").Short('N').BoolVar(&opts.NoAssignDefaults)
 	KP.Flag("interface", "Only generate an interface (disables all the other options).").Short('i').BoolVar(&opts.InterfaceOnly)
 
-	KP.Flag("keep-temp", "Keep the generated temporary Go file.").Short('k').BoolVar(&keepTemp)
+	KP.Flag("src-only", "Only output the Go code (helpful if you want to edit it yourself).").Short('s').BoolVar(&srcOnly)
+	KP.Flag("package-name", "the package name to use if --src-only is specified.").
+		Default("main").Short('p').StringVar(&pkgName)
+
+	KP.Flag("keep-temp", "Keep the generated Go file, ignore if --src-only is specified.").Short('k').BoolVar(&keepTemp)
+
+	KP.Flag("out", "Write the output to a file instead of stdout.").Short('o').Default("-").StringVar(&outFile)
 
 	KP.Arg("pkg.struct", "List of structs to convert (github.com/you/auth/users.User or just users.User).").
 		Required().StringsVar(&types)
@@ -47,18 +59,33 @@ func main() {
 	KP.Version(version).VersionFlag.Short('V')
 	KP.Parse()
 
+	out := os.Stdout
+	if outFile != "-" && outFile != "/dev/stdout" {
+		of, err := os.Create(outFile)
+		if err != nil {
+			log.Panic(err)
+		}
+		defer of.Close()
+		out = of
+	}
+
 	src, err := render()
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	if src, err = imports.Process("s2ts_gen.go", src, nil); err != nil {
-		log.Fatal(err)
+		log.Panic(err)
+	}
+
+	if srcOnly {
+		out.Write(src)
+		return
 	}
 
 	f, err := ioutil.TempFile("", "s2ts_gen_*.go")
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	defer func() {
 		if recover() == nil && !keepTemp {
@@ -77,7 +104,7 @@ func main() {
 	cmd := exec.Command("go", "run", f.Name())
 
 	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
+	cmd.Stdout = out
 
 	if err = cmd.Run(); err != nil {
 		log.Panic(err)
@@ -103,28 +130,34 @@ func render() ([]byte, error) {
 		}
 		ttypes = append(ttypes, t)
 	}
+
 	err := tmpl.Execute(&buf, M{
+		"pkgName": pkgName,
+		"cmd":     strings.Join(os.Args[1:], " "),
 		"opts":    opts,
 		"imports": imports,
 		"types":   ttypes,
 	})
+
 	return buf.Bytes(), err
 }
 
-const fileTmpl = `package main
+const fileTmpl = `// this file was automatically generated using struct2ts {{.cmd}}
+package {{.pkgName}}
 
 import (
 	"os"
-
-	{{ range $_, $imp := .imports }}
-	"{{$imp}}"{{ end }}
-
-	s2ts "github.com/OneOfOne/struct2ts"
-
+	"github.com/OneOfOne/struct2ts"
+	{{ range $_, $imp := .imports }}"{{$imp}}"{{ end }}
 )
+{{ if eq .pkgName "main" }}func main() {
+	if err := runStruct2TS(); err != nil {
+		panic(err)
+	}
+}{{ end }}
 
-func main() {
-	s := s2ts.New(&s2ts.Options{
+func runStruct2TS() error {
+	s := struct2ts.New(&struct2ts.Options{
 		Indent: "{{ .opts.Indent }}",
 
 		NoAssignDefaults: {{ .opts.NoAssignDefaults }},
@@ -139,8 +172,6 @@ func main() {
 	{{ range $_, $t := .types }}
 	s.Add({{$t}}{}){{ end }}
 
-	if err := s.RenderTo(os.Stdout); err != nil {
-		log.Fatal(err)
-	}
+	return s.RenderTo(os.Stdout)
 }
 `

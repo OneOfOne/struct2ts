@@ -30,14 +30,17 @@ Flags:
 	-D, --no-date               Don't automatically handle time.Unix () <-> JS Date().
 	-N, --no-default-values     Don't assign default/zero values in the ctor.
 	-i, --interface             Only generate an interface (disables all the other options).
-	-k, --keep-temp             Keep the generated temporary Go file.
+	-s, --src-only              Only output the Go code (helpful if you want to edit it yourself).
+	-p, --package-name="main"   the package name to use if --src-only is specified.
+	-k, --keep-temp             Keep the generated Go file, ignore if --src-only is specified.
+	-o, --out="-"               Write the output to a file instead of stdout.
 	-V, --version               Show application version.
 
 Args:
 	<pkg.struct>  List of structs to convert (github.com/you/auth/users.User or just users.User).
 
 ┏━ oneofone@Ava ❨✪/O/struct2ts❩ ❨master ⚡❩
-┗━━➤ struct2ts github.com/OneOfOne/struct2ts.Options # or just struct2ts.Options and /x/imports will handle it.
+┗━━➤ struct2ts struct2ts.Options
 
 main.go:75: executing: go run /tmp/s2ts_gen_725543931.go
 // struct2ts:github.com/OneOfOne/struct2ts.Options
@@ -49,7 +52,6 @@ export class Options {
 	NoConstructor: boolean = false;
 	NoToObject: boolean = false;
 	NoDate: boolean = false;
-	indents: string[] = [];
 
 	constructor(data?: any) {
 		if (typeof data !== 'object') return;
@@ -61,7 +63,6 @@ export class Options {
 		if ('NoConstructor' in data) this.NoConstructor = data.NoConstructor as boolean;
 		if ('NoToObject' in data) this.NoToObject = data.NoToObject as boolean;
 		if ('NoDate' in data) this.NoDate = data.NoDate as boolean;
-		if ('indents' in data) this.indents = data.indents as string[];
 	}
 
 	toObject(): { [key:string]: any } {
@@ -74,9 +75,43 @@ export class Options {
 		if (this.NoConstructor) data.NoConstructor = this.NoConstructor;
 		if (this.NoToObject) data.NoToObject = this.NoToObject;
 		if (this.NoDate) data.NoDate = this.NoDate;
-		if (this.indents) data.indents = this.indents;
 		return data;
 	}
+}
+
+┏━ oneofone@Ava ❨✪/O/struct2ts❩ ❨master ⚡❩
+┗━━➤ struct2ts --src-only struct2ts.Options
+// this file was automatically generated using struct2ts --src-only struct2ts.Options
+package main
+
+import (
+	"os"
+
+	"github.com/OneOfOne/struct2ts"
+)
+
+func main() {
+	if err := runStruct2TS(); err != nil {
+		panic(err)
+	}
+}
+
+func runStruct2TS() error {
+	s := struct2ts.New(&struct2ts.Options{
+		Indent: "	",
+
+		NoAssignDefaults: false,
+		InterfaceOnly:    false,
+
+		NoConstructor: false,
+		MarkOptional:  false,
+		NoToObject:    false,
+		NoDate:        false,
+	})
+
+	s.Add(struct2ts.Options{})
+
+	return s.RenderTo(os.Stdout)
 }
 ```
 
