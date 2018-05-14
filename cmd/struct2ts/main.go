@@ -8,8 +8,9 @@ import (
 	"os/exec"
 	"strings"
 
-	s2ts "github.com/OneOfOne/struct2ts"
-	"github.com/alecthomas/template"
+	"text/template"
+
+	"github.com/OneOfOne/struct2ts"
 	"golang.org/x/tools/imports"
 	KP "gopkg.in/alecthomas/kingpin.v2"
 )
@@ -17,7 +18,7 @@ import (
 const version = "v0.0.3"
 
 var (
-	opts  s2ts.Options
+	opts  struct2ts.Options
 	types []string
 
 	outFile string
