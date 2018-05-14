@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"reflect"
-	"sort"
 	"strings"
 )
 
@@ -139,7 +138,6 @@ func (s *StructToTS) addType(t reflect.Type) (out *Struct) {
 }
 
 func (s *StructToTS) RenderTo(w io.Writer) (err error) {
-	sort.Slice(s.structs, func(i, j int) bool { return s.structs[i].Name < s.structs[j].Name })
 	for _, st := range s.structs {
 		if err = st.RenderTo(s.opts, w); err != nil {
 			return
