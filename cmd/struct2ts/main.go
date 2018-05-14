@@ -2,11 +2,14 @@ package main
 
 import (
 	"bytes"
-	"io/ioutil"
+	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"text/template"
 
@@ -52,7 +55,7 @@ func init() {
 		Required().StringsVar(&types)
 }
 
-type M = map[string]interface{}
+type M map[string]interface{}
 
 func main() {
 	log.SetFlags(log.Lshortfile)
@@ -84,7 +87,7 @@ func main() {
 		return
 	}
 
-	f, err := ioutil.TempFile("", "s2ts_gen_*.go")
+	f, err := tempFile()
 	if err != nil {
 		log.Panic(err)
 	}
@@ -141,6 +144,12 @@ func render() ([]byte, error) {
 	})
 
 	return buf.Bytes(), err
+}
+
+func tempFile() (f *os.File, err error) {
+	// if this somehow conflicts, god really hates us.
+	fpath := filepath.Join(os.TempDir(), fmt.Sprintf("s2ts_gen_%d_%d.go", time.Now().UnixNano(), rand.Int63()))
+	return os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 }
 
 const fileTmpl = `// this file was automatically generated using struct2ts {{.cmd}}
