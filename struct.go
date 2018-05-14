@@ -151,19 +151,16 @@ func (f *Field) Type(noDate, noSuffix bool) (out string) {
 	return
 }
 
-func (f *Field) DefaultValue() (def string) {
+func (f *Field) DefaultValue() string {
 	if f.CanBeNull {
 		return "null"
 	}
 
-	if def = zeroValues[f.TsType]; def != "" {
-		return def
+	if f.TsType == "object" && f.ValType != "" {
+		return "new " + f.ValType + "()"
 	}
 
-	if f.TsType == "object" {
-		def = "new " + f.ValType + "()"
-	}
-	return
+	return zeroValues[f.TsType]
 }
 
 func (f *Field) setProps(sf reflect.StructField) (ignore bool) {
@@ -193,9 +190,18 @@ func (f *Field) setProps(sf reflect.StructField) (ignore bool) {
 	f.Name = jsonTag[0]
 	f.IsDate = len(tsTag) > 0 && tsTag[0] == "date" || sf.Type.Kind() == reflect.Int64 && strings.HasSuffix(f.Name, "TS")
 
-	if len(jsonTag) == 2 {
-		f.IsOptional = strings.Contains(jsonTag[1], "omitempty")
+	if len(tsTag) > 1 {
+		switch tsTag[1] {
+		case "no-null":
+			f.CanBeNull = false
+		case "null":
+			f.CanBeNull = true
+		case "optional":
+			f.IsOptional = true
+		}
 	}
+
+	f.IsOptional = f.IsOptional || len(jsonTag) > 1 && jsonTag[1] == "omitempty"
 
 	return
 }

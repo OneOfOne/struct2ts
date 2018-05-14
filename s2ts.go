@@ -84,14 +84,14 @@ func (s *StructToTS) addType(t reflect.Type, prefix string) (out *Struct) {
 			k   = sft.Kind()
 		)
 
-		if tf.setProps(sf) {
-			continue
-		}
-
 		if k == reflect.Ptr {
 			tf.CanBeNull = true
 			sft = indirect(sft)
 			k = sft.Kind()
+		}
+
+		if tf.setProps(sf) {
+			continue
 		}
 
 		switch {

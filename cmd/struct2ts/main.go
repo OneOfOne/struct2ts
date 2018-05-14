@@ -78,6 +78,8 @@ func main() {
 		log.Panic(err)
 	}
 
+	log.Println(string(src))
+
 	if src, err = imports.Process("s2ts_gen.go", src, nil); err != nil {
 		log.Panic(err)
 	}
@@ -161,12 +163,25 @@ import (
 	{{ range $_, $imp := .imports }}"{{$imp}}"{{ end }}
 )
 {{ if eq .pkgName "main" }}func main() {
-	if err := runStruct2TS(); err != nil {
+	var (
+		out = flag.String("o", "-", "output")
+		f = os.Stdout
+		err error
+	)
+
+	flag.Parse()
+	if *out != "-" {
+		if f, err = os.OpenFile(*out, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644); err != nil {
+			panic(err)
+		}
+		defer f.Close()
+	}
+	if err = runStruct2TS(f); err != nil {
 		panic(err)
 	}
 }{{ end }}
 
-func runStruct2TS() error {
+func runStruct2TS(w io.Writer) error {
 	s := struct2ts.New(&struct2ts.Options{
 		Indent: "{{ .opts.Indent }}",
 
@@ -182,6 +197,7 @@ func runStruct2TS() error {
 	{{ range $_, $t := .types }}
 	s.Add({{$t}}{}){{ end }}
 
-	return s.RenderTo(os.Stdout)
+	io.WriteString(w, "// this file was automatically generated, DO NOT EDIT\n\n")
+	return s.RenderTo(w)
 }
 `
