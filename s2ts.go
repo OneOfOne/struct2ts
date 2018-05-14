@@ -59,10 +59,10 @@ func (s *StructToTS) Add(v interface{}) *Struct {
 		t = reflect.TypeOf(v)
 	}
 
-	return s.addType(t)
+	return s.addType(t, "")
 }
 
-func (s *StructToTS) addType(t reflect.Type) (out *Struct) {
+func (s *StructToTS) addType(t reflect.Type, prefix string) (out *Struct) {
 	t = indirect(t)
 
 	if out = s.seen[t]; out != nil {
@@ -70,7 +70,7 @@ func (s *StructToTS) addType(t reflect.Type) (out *Struct) {
 	}
 
 	out = &Struct{
-		Name:   t.Name(),
+		Name:   prefix + t.Name(),
 		Fields: make([]Field, 0, t.NumField()),
 
 		t: t,
@@ -108,20 +108,20 @@ func (s *StructToTS) addType(t reflect.Type) (out *Struct) {
 			tf.TsType, tf.KeyType, tf.ValType = "map", stripType(sft.Key()), stripType(sft.Elem())
 
 			if isStruct(sft.Elem()) {
-				s.addType(sft.Elem())
+				tf.ValType = s.addType(sft.Elem(), out.Name).Name
 			}
 
 		case k == reflect.Slice, k == reflect.Array:
 			tf.TsType, tf.ValType = "array", stripType(sft.Elem())
 
 			if isStruct(sft.Elem()) {
-				s.addType(sft.Elem())
+				tf.ValType = s.addType(sft.Elem(), out.Name).Name
 			}
 
 		case k == reflect.Struct:
-			tf.TsType, tf.ValType = "object", stripType(sft)
+			tf.TsType = "object"
+			tf.ValType = s.addType(sft, out.Name).Name
 
-			s.addType(sft)
 		case k == reflect.Interface:
 			tf.TsType, tf.ValType = "object", ""
 

@@ -124,7 +124,7 @@ type Field struct {
 	ValType    string `json:"valType,omitempty"`
 	CanBeNull  bool   `json:"canBeNull"`
 	IsOptional bool   `json:"isOptional"`
-	IsDate     bool
+	IsDate     bool   `json:"isDate"`
 }
 
 func (f *Field) Type(noDate, noSuffix bool) (out string) {
@@ -176,26 +176,25 @@ func (f *Field) setProps(sf reflect.StructField) (ignore bool) {
 		return true
 	}
 
-	t := strings.Split(sf.Tag.Get("json"), ",")
-	if len(t) == 0 || len(t) == 1 && t[0] == "" {
-		t = strings.Split(sf.Tag.Get("ts"), ",")
+	var (
+		jsonTag = strings.Split(sf.Tag.Get("json"), ",")
+		tsTag   = strings.Split(sf.Tag.Get("ts"), ",")
+	)
+
+	if ignore = len(tsTag) > 0 && tsTag[0] == "-" || len(jsonTag) > 0 && jsonTag[0] == "-"; ignore {
+		return
 	}
 
-	if len(t) == 0 || len(t) == 1 && t[0] == "" {
+	if len(jsonTag) == 0 || len(jsonTag) == 1 && jsonTag[0] == "" {
 		f.Name = sf.Name
 		return
 	}
 
-	if ignore = t[0] == "-" || t[0] == ""; ignore {
-		return true
-	}
+	f.Name = jsonTag[0]
+	f.IsDate = len(tsTag) > 0 && tsTag[0] == "date" || sf.Type.Kind() == reflect.Int64 && strings.HasSuffix(f.Name, "TS")
 
-	f.Name = t[0]
-	f.IsDate = sf.Type.Kind() == reflect.Int64 && strings.Contains(strings.ToLower(f.Name), "ts")
-
-	if len(t) == 2 {
-		f.IsOptional = strings.Contains(t[1], "omitempty") || strings.Contains(t[1], "optional")
-		f.IsDate = f.IsDate || strings.Contains(t[1], "date")
+	if len(jsonTag) == 2 {
+		f.IsOptional = strings.Contains(jsonTag[1], "omitempty")
 	}
 
 	return
