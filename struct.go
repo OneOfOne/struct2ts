@@ -61,7 +61,7 @@ func (s *Struct) RenderFields(opts *Options, w io.Writer) (err error) {
 		if f.IsOptional && opts.MarkOptional {
 			name += "?"
 		}
-		if opts.InterfaceOnly || opts.NoAssignDefaults {
+		if opts.InterfaceOnly || opts.NoAssignDefaults || !opts.NoConstructor {
 			_, err = fmt.Fprintf(w, "%s%s: %s;\n", opts.indents[1], name, f.Type(opts.NoDate, false))
 		} else {
 			_, err = fmt.Fprintf(w, "%s%s: %s = %s;\n", opts.indents[1], name, f.Type(opts.NoDate, false), f.DefaultValue())
@@ -76,16 +76,19 @@ func (s *Struct) RenderConstructor(opts *Options, w io.Writer) (err error) {
 	}
 
 	fmt.Fprintf(w, "\n%sconstructor(data?: any) {\n", opts.indents[1])
-	fmt.Fprintf(w, "%sif (typeof data !== 'object') return;\n\n", opts.indents[2])
+	fmt.Fprintf(w, "%sconst d: any = typeof data === 'object' ? data : {};\n\n", opts.indents[2])
 	for _, f := range s.Fields {
 		switch t := f.Type(opts.NoDate, true); t {
 		case "Date":
 			// convert to js date
-			fmt.Fprintf(w, "%sif ('%s' in data) this.%s = new Date(data.%s * 1000);\n", opts.indents[2], f.Name, f.Name, f.Name)
+			fmt.Fprintf(w, "%sthis.%s = ('%s' in d) ? new Date(d.%s * 1000) : new Date();\n",
+				opts.indents[2], f.Name, f.Name, f.Name)
 		case f.ValType: // struct
-			fmt.Fprintf(w, "%sif ('%s' in data) this.%s = new %s(data.%s);\n", opts.indents[2], f.Name, f.Name, f.ValType, f.Name)
+			fmt.Fprintf(w, "%sthis.%s = ('%s' in d) ? new %s(d.%s) : %s;\n",
+				opts.indents[2], f.Name, f.Name, f.ValType, f.Name, f.DefaultValue())
 		default:
-			fmt.Fprintf(w, "%sif ('%s' in data) this.%s = data.%s as %s;\n", opts.indents[2], f.Name, f.Name, f.Name, t)
+			fmt.Fprintf(w, "%sthis.%s = ('%s' in d) ? d.%s as %s : %s;\n",
+				opts.indents[2], f.Name, f.Name, f.Name, t, f.DefaultValue())
 		}
 	}
 	_, err = fmt.Fprintf(w, "%s}\n", opts.indents[1])
