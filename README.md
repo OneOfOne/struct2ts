@@ -14,6 +14,15 @@ Inspired by [tkrajina/typescriptify-golang-structs](https://github.com/tkrajina/
 * Automatically handles Go `int64` timestamps `<->` Javascript `Date`.
 * Automatically handles json tags.
 
+## Options
+
+* There's an extra struct tag to control the output, `ts`, valid options are:
+
+1. `-` omit this field.
+2. `date` handle converting `time.Time{}.Unix() <-> javascript Date`.
+3. `no-null` only valid for struct fields, forces creating a new class rather than using `null` in TS.
+4. `null` allows any field type to be `null`.
+
 ## Example
 
 ```
