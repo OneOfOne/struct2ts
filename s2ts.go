@@ -94,16 +94,8 @@ func (s *StructToTS) addType(t reflect.Type, prefix string) (out *Struct) {
 			continue
 		}
 
+		tf.TsType = stripType(sft)
 		switch {
-		case isNumber(k):
-			tf.TsType = "number"
-
-		case k == reflect.String:
-			tf.TsType = "string"
-
-		case k == reflect.Bool:
-			tf.TsType = "boolean"
-
 		case k == reflect.Map:
 			tf.TsType, tf.KeyType, tf.ValType = "map", stripType(sft.Key()), stripType(sft.Elem())
 
@@ -173,6 +165,16 @@ func isStruct(t reflect.Type) bool {
 }
 
 func stripType(t reflect.Type) string {
+	k := t.Kind()
+	switch {
+	case isNumber(k):
+		return "number"
+	case k == reflect.String:
+		return "string"
+	case k == reflect.Bool:
+		return "boolean"
+	}
+
 	n := t.String()
 	if i := strings.IndexByte(n, '.'); i > -1 {
 		n = n[i+1:]

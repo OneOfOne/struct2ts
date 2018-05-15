@@ -14,6 +14,7 @@ var zeroValues = map[string]string{
 	"boolean": "false",
 	"string":  "''",
 	"object":  "{}",
+	"map":     "{}",
 	"array":   "[]",
 }
 

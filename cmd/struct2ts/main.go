@@ -78,8 +78,6 @@ func main() {
 		log.Panic(err)
 	}
 
-	log.Println(string(src))
-
 	if src, err = imports.Process("s2ts_gen.go", src, nil); err != nil {
 		log.Panic(err)
 	}
