@@ -16,12 +16,23 @@ Inspired by [tkrajina/typescriptify-golang-structs](https://github.com/tkrajina/
 
 ## Options
 
-* There's an extra struct tag to control the output, `ts`, valid options are:
+### There's an extra struct tag to control the output, `ts`, valid options are
 
-1. `-` omit this field.
-2. `date` handle converting `time.Time{}.Unix() <-> javascript Date`.
-3. `no-null` only valid for struct fields, forces creating a new class rather than using `null` in TS.
-4. `null` allows any field type to be `null`.
+*. `-` omit this field.
+*. `date` handle converting `time.Time{}.Unix() <-> javascript Date`.
+*. `no-null` only valid for struct fields, forces creating a new class rather than using `null` in TS.
+*. `null` allows any field type to be `null`.
+
+#### Example struct
+
+```
+type S struct{
+	Date int64 `json:"date" ts:"date"`
+	GoOnly string `json:"server-side-only" ts:"-"`
+	NoNull *OtherStruct `ts:"no-null"` // the generated TS code will always use new OtherStruct instead of null for the default value.
+	Null int64 `ts:"null"` // the default value in the generated TS code will be null instead of 0.
+}
+```
 
 ## Example
 
@@ -40,8 +51,8 @@ Flags:
 	-N, --no-default-values     Don't assign default/zero values in the ctor.
 	-i, --interface             Only generate an interface (disables all the other options).
 	-s, --src-only              Only output the Go code (helpful if you want to edit it yourself).
-	-p, --package-name="main"   the package name to use if --src-only is specified.
-	-k, --keep-temp             Keep the generated Go file, ignore if --src-only is specified.
+	-p, --package-name="main"   the package name to use if --src-only is set.
+	-k, --keep-temp             Keep the generated Go file, ignored if --src-only is set.
 	-o, --out="-"               Write the output to a file instead of stdout.
 	-V, --version               Show application version.
 

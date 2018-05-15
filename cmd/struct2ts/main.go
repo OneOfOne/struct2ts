@@ -44,10 +44,10 @@ func init() {
 	KP.Flag("interface", "Only generate an interface (disables all the other options).").Short('i').BoolVar(&opts.InterfaceOnly)
 
 	KP.Flag("src-only", "Only output the Go code (helpful if you want to edit it yourself).").Short('s').BoolVar(&srcOnly)
-	KP.Flag("package-name", "the package name to use if --src-only is specified.").
+	KP.Flag("package-name", "the package name to use if --src-only is set.").
 		Default("main").Short('p').StringVar(&pkgName)
 
-	KP.Flag("keep-temp", "Keep the generated Go file, ignore if --src-only is specified.").Short('k').BoolVar(&keepTemp)
+	KP.Flag("keep-temp", "Keep the generated Go file, ignored if --src-only is set.").Short('k').BoolVar(&keepTemp)
 
 	KP.Flag("out", "Write the output to a file instead of stdout.").Short('o').Default("-").StringVar(&outFile)
 
