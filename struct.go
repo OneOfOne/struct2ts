@@ -64,6 +64,7 @@ func (s *Struct) RenderFields(opts *Options, w io.Writer) (err error) {
 		}
 		if opts.InterfaceOnly || opts.NoAssignDefaults || !opts.NoConstructor {
 			_, err = fmt.Fprintf(w, "%s%s: %s;\n", opts.indents[1], name, f.Type(opts.NoDate, false))
+			continue
 		} else {
 			_, err = fmt.Fprintf(w, "%s%s: %s = %s;\n", opts.indents[1], name, f.Type(opts.NoDate, false), f.DefaultValue())
 		}
@@ -79,14 +80,22 @@ func (s *Struct) RenderConstructor(opts *Options, w io.Writer) (err error) {
 	fmt.Fprintf(w, "\n%sconstructor(data?: any) {\n", opts.indents[1])
 	fmt.Fprintf(w, "%sconst d: any = typeof data === 'object' ? data : {};\n\n", opts.indents[2])
 	for _, f := range s.Fields {
-		switch t := f.Type(opts.NoDate, true); t {
-		case "Date":
+		t := f.Type(opts.NoDate, true)
+		switch {
+		case t == "Date":
 			// convert to js date
 			fmt.Fprintf(w, "%sthis.%s = ('%s' in d) ? new Date(d.%s * 1000) : new Date();\n",
 				opts.indents[2], f.Name, f.Name, f.Name)
-		case f.ValType: // struct
+		case t == f.ValType: // struct
 			fmt.Fprintf(w, "%sthis.%s = ('%s' in d) ? new %s(d.%s) : %s;\n",
 				opts.indents[2], f.Name, f.Name, f.ValType, f.Name, f.DefaultValue())
+		case f.TsType == "array" && !f.IsNative():
+			fmt.Fprintf(w, "%sthis.%s = (d.%s || []).map((v: any) => new %s(v));\n",
+				opts.indents[2], f.Name, f.Name, f.ValType)
+		case f.TsType == "map" && !f.IsNative():
+			// fmt.Fprintf(w, "%sthis.%s = Object.keys(d.%s || {}).mp((k: any) => new %s(v));\n",
+			// 	opts.indents[2], f.Name, f.Name, f.ValType)
+			fallthrough
 		default:
 			fmt.Fprintf(w, "%sthis.%s = ('%s' in d) ? d.%s as %s : %s;\n",
 				opts.indents[2], f.Name, f.Name, f.Name, t, f.DefaultValue())
@@ -164,7 +173,15 @@ func (f *Field) DefaultValue() string {
 	return zeroValues[f.TsType]
 }
 
-func (f *Field) setProps(sf reflect.StructField) (ignore bool) {
+func (f *Field) IsNative() bool {
+	switch f.TsType {
+	case "array", "map":
+		return IsNative(f.ValType)
+	default:
+		return IsNative(f.TsType)
+	}
+}
+func (f *Field) setProps(sf reflect.StructField, sft reflect.Type) (ignore bool) {
 	if len(sf.Name) > 0 && !ast.IsExported(sf.Name) {
 		return true
 	}
@@ -189,7 +206,7 @@ func (f *Field) setProps(sf reflect.StructField) (ignore bool) {
 	}
 
 	f.Name = jsonTag[0]
-	f.IsDate = len(tsTag) > 0 && tsTag[0] == "date" || sf.Type.Kind() == reflect.Int64 && strings.HasSuffix(f.Name, "TS")
+	f.IsDate = len(tsTag) > 0 && tsTag[0] == "date" || sft.Kind() == reflect.Int64 && strings.HasSuffix(f.Name, "TS")
 
 	if len(tsTag) > 1 {
 		switch tsTag[1] {
@@ -203,6 +220,16 @@ func (f *Field) setProps(sf reflect.StructField) (ignore bool) {
 	}
 
 	f.IsOptional = f.IsOptional || len(jsonTag) > 1 && jsonTag[1] == "omitempty"
+	f.TsType = stripType(sft)
 
 	return
+}
+
+func IsNative(t string) bool {
+	switch t {
+	case "string", "number", "boolean", "Date":
+		return true
+	default:
+		return false
+	}
 }

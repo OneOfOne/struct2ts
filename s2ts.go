@@ -90,11 +90,10 @@ func (s *StructToTS) addType(t reflect.Type, prefix string) (out *Struct) {
 			k = sft.Kind()
 		}
 
-		if tf.setProps(sf) {
+		if tf.setProps(sf, sft) {
 			continue
 		}
 
-		tf.TsType = stripType(sft)
 		switch {
 		case k == reflect.Map:
 			tf.TsType, tf.KeyType, tf.ValType = "map", stripType(sft.Key()), stripType(sft.Elem())
@@ -117,6 +116,7 @@ func (s *StructToTS) addType(t reflect.Type, prefix string) (out *Struct) {
 		case k == reflect.Interface:
 			tf.TsType, tf.ValType = "object", ""
 
+		case tf.TsType != "": // native type
 		default:
 			log.Println("unhandled", k, sft)
 		}
