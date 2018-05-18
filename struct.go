@@ -52,7 +52,7 @@ func (s *Struct) RenderTo(opts *Options, w io.Writer) (err error) {
 		return
 	}
 
-	_, err = fmt.Fprintln(w, "}")
+	_, err = fmt.Fprint(w, "}")
 	return
 }
 
@@ -84,8 +84,8 @@ func (s *Struct) RenderConstructor(opts *Options, w io.Writer) (err error) {
 		switch {
 		case t == "Date":
 			// convert to js date
-			fmt.Fprintf(w, "%sthis.%s = ('%s' in d) ? new Date(d.%s * 1000) : new Date();\n",
-				opts.indents[2], f.Name, f.Name, f.Name)
+			fmt.Fprintf(w, "%sthis.%s = ('%s' in d) ? new Date(d.%s * 1000) : %s;\n",
+				opts.indents[2], f.Name, f.Name, f.Name, f.DefaultValue())
 		case t == f.ValType: // struct
 			fmt.Fprintf(w, "%sthis.%s = ('%s' in d) ? new %s(d.%s) : %s;\n",
 				opts.indents[2], f.Name, f.Name, f.ValType, f.Name, f.DefaultValue())
@@ -164,6 +164,10 @@ func (f *Field) Type(noDate, noSuffix bool) (out string) {
 func (f *Field) DefaultValue() string {
 	if f.CanBeNull {
 		return "null"
+	}
+
+	if f.IsDate {
+		return "new Date()"
 	}
 
 	if f.TsType == "object" && f.ValType != "" {
