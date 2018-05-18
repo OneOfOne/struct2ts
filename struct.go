@@ -93,8 +93,8 @@ func (s *Struct) RenderConstructor(opts *Options, w io.Writer) (err error) {
 			fmt.Fprintf(w, "%sthis.%s = ('%s' in d) ? new %s(d.%s) : %s;\n",
 				opts.indents[2], f.Name, f.Name, f.ValType, f.Name, f.DefaultValue())
 		case f.TsType == "array" && !f.IsNative():
-			fmt.Fprintf(w, "%sthis.%s = (d.%s || []).map((v: any) => new %s(v));\n",
-				opts.indents[2], f.Name, f.Name, f.ValType)
+			fmt.Fprintf(w, "%sthis.%s = Array.isArray(d.%s) ? d.%s.map((v: any) => new %s(v)) : %s;\n",
+				opts.indents[2], f.Name, f.Name, f.Name, f.ValType, f.DefaultValue())
 		case f.TsType == "map" && !f.IsNative():
 			// fmt.Fprintf(w, "%sthis.%s = Object.keys(d.%s || {}).mp((k: any) => new %s(v));\n",
 			// 	opts.indents[2], f.Name, f.Name, f.ValType)
