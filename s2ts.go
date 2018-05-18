@@ -130,6 +130,7 @@ func (s *StructToTS) addType(t reflect.Type, prefix string) (out *Struct) {
 }
 
 func (s *StructToTS) RenderTo(w io.Writer) (err error) {
+	fmt.Fprint(w, helpers)
 	for _, st := range s.structs {
 		if err = st.RenderTo(s.opts, w); err != nil {
 			return
@@ -181,3 +182,17 @@ func stripType(t reflect.Type) string {
 	}
 	return n
 }
+
+const helpers = `/* <helpers> */
+function getDate(d: Date | number | string): Date {
+	const maxUnixTSInSeconds = 9999999999;
+	if (d instanceof Date) return d;
+	if (typeof d === 'number') {
+		if(d > maxUnixTSInSeconds) return new Date(d);
+		return new Date(d * 1000); // go ts
+	}
+	return new Date(d);
+}
+/* </helpers> */
+
+`

@@ -78,13 +78,16 @@ func (s *Struct) RenderConstructor(opts *Options, w io.Writer) (err error) {
 	}
 
 	fmt.Fprintf(w, "\n%sconstructor(data?: any) {\n", opts.indents[1])
-	fmt.Fprintf(w, "%sconst d: any = typeof data === 'object' ? data : {};\n\n", opts.indents[2])
+	fmt.Fprintf(w, "%slet d: any = (data && typeof data === 'object') ? data : {};\n", opts.indents[2])
+	if !opts.NoToObject {
+		fmt.Fprintf(w, "%sif (d instanceof %s) d = d.toObject();\n\n", opts.indents[2], s.Name)
+	}
 	for _, f := range s.Fields {
 		t := f.Type(opts.NoDate, true)
 		switch {
 		case t == "Date":
 			// convert to js date
-			fmt.Fprintf(w, "%sthis.%s = ('%s' in d) ? new Date(d.%s * 1000) : %s;\n",
+			fmt.Fprintf(w, "%sthis.%s = ('%s' in d) ? getDate(d.%s) : %s;\n",
 				opts.indents[2], f.Name, f.Name, f.Name, f.DefaultValue())
 		case t == f.ValType: // struct
 			fmt.Fprintf(w, "%sthis.%s = ('%s' in d) ? new %s(d.%s) : %s;\n",
