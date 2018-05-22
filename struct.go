@@ -118,11 +118,16 @@ func (s *Struct) RenderToObject(opts *Options, w io.Writer) (err error) {
 	for _, f := range s.Fields {
 		t := f.Type(opts.NoDate, true)
 		switch {
+		case t == "number":
+			fmt.Fprintf(w, "%sif (this.%s) data.%s = getNumber(this.%s);\n",
+				opts.indents[2], f.Name, f.Name, f.Name)
 		case t == "Date":
 			// convert to valid go time
-			fmt.Fprintf(w, "%sif (this.%s) data.%s = this.%s.getTime() / 1000 >>> 0;\n", opts.indents[2], f.Name, f.Name, f.Name)
+			fmt.Fprintf(w, "%sif (this.%s) data.%s = this.%s.getTime() / 1000 >>> 0;\n",
+				opts.indents[2], f.Name, f.Name, f.Name)
 		case t == f.ValType: // struct
-			fmt.Fprintf(w, "%sif (this.%s) data.%s = this.%s.toObject();\n", opts.indents[2], f.Name, f.Name, f.Name)
+			fmt.Fprintf(w, "%sif (this.%s) data.%s = this.%s.toObject();\n",
+				opts.indents[2], f.Name, f.Name, f.Name)
 		case f.TsType == "array" && !f.IsNative():
 			fmt.Fprintf(w, "%sif (Array.isArray(this.%s)) data.%s = this.%s.map((v) => v.toObject());\n",
 				opts.indents[2], f.Name, f.Name, f.Name)

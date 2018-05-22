@@ -184,14 +184,20 @@ func stripType(t reflect.Type) string {
 }
 
 const helpers = `/* <helpers> */
+const maxUnixTSInSeconds = 9999999999;
+
 function getDate(d: Date | number | string): Date {
-	const maxUnixTSInSeconds = 9999999999;
 	if (d instanceof Date) return d;
 	if (typeof d === 'number') {
-		if(d > maxUnixTSInSeconds) return new Date(d);
+		if (d > maxUnixTSInSeconds) return new Date(d);
 		return new Date(d * 1000); // go ts
 	}
 	return new Date(d);
+}
+
+function getNumber(v: number | string): number {
+	if (typeof v === 'number') return v;
+	return parseFloat(v || '0');
 }
 /* </helpers> */
 
