@@ -18,7 +18,7 @@ import (
 	KP "gopkg.in/alecthomas/kingpin.v2"
 )
 
-const version = "v0.0.3"
+const version = "v1.0.0"
 
 var (
 	opts  struct2ts.Options
@@ -37,9 +37,12 @@ var (
 func init() {
 	KP.Flag("indent", "Output indentation.").Default("\t").StringVar(&opts.Indent)
 	KP.Flag("mark-optional-fields", "Add `?` to fields with omitempty.").Short('m').BoolVar(&opts.MarkOptional)
+	KP.Flag("es6", "generate es6 code").Short('6').BoolVar(&opts.ES6)
 	KP.Flag("no-ctor", "Don't generate a ctor.").Short('C').BoolVar(&opts.NoConstructor)
 	KP.Flag("no-toObject", "Don't generate a Class.toObject() method.").Short('T').BoolVar(&opts.NoToObject)
+	KP.Flag("no-exports", "Don't automatically export the generated types.").Short('E').BoolVar(&opts.NoExports)
 	KP.Flag("no-date", "Don't automatically handle time.Unix () <-> JS Date().").Short('D').BoolVar(&opts.NoDate)
+	KP.Flag("no-helpers", "Don't output the helpers.").Short('H').BoolVar(&opts.NoHelpers)
 	KP.Flag("no-default-values", "Don't assign default/zero values in the ctor.").Short('N').BoolVar(&opts.NoAssignDefaults)
 	KP.Flag("interface", "Only generate an interface (disables all the other options).").Short('i').BoolVar(&opts.InterfaceOnly)
 
@@ -51,8 +54,9 @@ func init() {
 
 	KP.Flag("out", "Write the output to a file instead of stdout.").Short('o').Default("-").StringVar(&outFile)
 
-	KP.Arg("pkg.struct", "List of structs to convert (github.com/you/auth/users.User or just users.User).").
-		Required().StringsVar(&types)
+	KP.Arg("pkg.struct", "List of structs to convert (github.com/you/auth/users.User, users.User or users.User:AliasUser).").
+		StringsVar(&types)
+
 }
 
 type M map[string]interface{}
@@ -64,6 +68,7 @@ func main() {
 	KP.Parse()
 
 	out := os.Stdout
+
 	if outFile != "-" && outFile != "/dev/stdout" {
 		of, err := os.Create(outFile)
 		if err != nil {
@@ -117,9 +122,10 @@ func main() {
 
 func render() ([]byte, error) {
 	var (
-		buf     bytes.Buffer
-		imports []string
-		ttypes  = types[:0]
+		buf            bytes.Buffer
+		imports        []string
+		ttypes         = types[:0]
+		typesWithNames [][2]string
 	)
 
 	for _, t := range types {
@@ -132,15 +138,20 @@ func render() ([]byte, error) {
 			imports = append(imports, t[:dotIdx])
 			t = t[idx+1:]
 		}
-		ttypes = append(ttypes, t)
+		if idx := strings.LastIndexByte(t, ':'); idx != -1 {
+			typesWithNames = append(typesWithNames, [2]string{t[:idx], t[idx+1:]})
+		} else {
+			ttypes = append(ttypes, t)
+		}
 	}
 
 	err := tmpl.Execute(&buf, M{
-		"pkgName": pkgName,
-		"cmd":     strings.Join(os.Args[1:], " "),
-		"opts":    opts,
-		"imports": imports,
-		"types":   ttypes,
+		"pkgName":        pkgName,
+		"cmd":            strings.Join(os.Args[1:], " "),
+		"opts":           opts,
+		"imports":        imports,
+		"types":          ttypes,
+		"typesWithNames": typesWithNames,
 	})
 
 	return buf.Bytes(), err
@@ -156,11 +167,18 @@ const fileTmpl = `// this file was automatically generated using struct2ts {{.cm
 package {{.pkgName}}
 
 import (
+	"flag"
+	"log"
+	"io"
 	"os"
+
 	"github.com/OneOfOne/struct2ts"
 	{{ range $_, $imp := .imports }}"{{$imp}}"{{ end }}
 )
-{{ if eq .pkgName "main" }}func main() {
+{{- if eq .pkgName "main" }}
+func main() {
+	log.SetFlags(log.Lshortfile)
+
 	var (
 		out = flag.String("o", "-", "output")
 		f = os.Stdout
@@ -177,7 +195,8 @@ import (
 	if err = runStruct2TS(f); err != nil {
 		panic(err)
 	}
-}{{ end }}
+}
+{{- end }}
 
 func runStruct2TS(w io.Writer) error {
 	s := struct2ts.New(&struct2ts.Options{
@@ -189,13 +208,21 @@ func runStruct2TS(w io.Writer) error {
 		NoConstructor: {{ .opts.NoConstructor }},
 		MarkOptional:  {{ .opts.MarkOptional  }},
 		NoToObject:    {{ .opts.NoToObject    }},
+		NoExports:     {{ .opts.NoExports        }},
+		NoHelpers:     {{ .opts.NoHelpers        }},
 		NoDate:        {{ .opts.NoDate        }},
+
+		ES6:        {{ .opts.ES6        }},
 	})
 
 	{{ range $_, $t := .types }}
-	s.Add({{$t}}{}){{ end }}
+	s.Add({{$t}}{})
+	{{- end }}
+	{{ range $_, $t := .typesWithNames }}
+	s.AddWithName({{index $t 0}}{}, "{{index $t 1}}")
+	{{- end }}
 
-	io.WriteString(w, "// this file was automatically generated, DO NOT EDIT\n\n")
+	io.WriteString(w, "// this file was automatically generated, DO NOT EDIT\n")
 	return s.RenderTo(w)
 }
 `

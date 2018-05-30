@@ -1,6 +1,9 @@
+//go:generate sh ./cmd/genHelpers.sh helpers.ts helpers_gen.go
+
 package struct2ts
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"log"
@@ -17,7 +20,10 @@ type Options struct {
 	MarkOptional  bool
 	NoConstructor bool
 	NoToObject    bool
+	NoExports     bool
+	NoHelpers     bool
 	NoDate        bool
+	ES6           bool
 
 	indents [3]string
 }
@@ -36,9 +42,8 @@ func New(opts *Options) *StructToTS {
 	}
 
 	return &StructToTS{
-		structs: []*Struct{},
-		seen:    map[reflect.Type]*Struct{},
-		opts:    opts,
+		seen: map[reflect.Type]*Struct{},
+		opts: opts,
 	}
 }
 
@@ -48,7 +53,9 @@ type StructToTS struct {
 	opts    *Options
 }
 
-func (s *StructToTS) Add(v interface{}) *Struct {
+func (s *StructToTS) Add(v interface{}) *Struct { return s.AddWithName(v, "") }
+
+func (s *StructToTS) AddWithName(v interface{}, name string) *Struct {
 	var t reflect.Type
 	switch v := v.(type) {
 	case reflect.Type:
@@ -59,22 +66,28 @@ func (s *StructToTS) Add(v interface{}) *Struct {
 		t = reflect.TypeOf(v)
 	}
 
-	return s.addType(t, "")
+	return s.addType(t, name, "")
 }
 
-func (s *StructToTS) addType(t reflect.Type, prefix string) (out *Struct) {
+func (s *StructToTS) addType(t reflect.Type, name, prefix string) (out *Struct) {
 	t = indirect(t)
 
 	if out = s.seen[t]; out != nil {
 		return out
 	}
 
+	if name == "" {
+		name = t.Name()
+	}
+
 	out = &Struct{
-		Name:   prefix + t.Name(),
-		Fields: make([]Field, 0, t.NumField()),
+		Name:   prefix + name,
+		Fields: make([]*Field, 0, t.NumField()),
 
 		t: t,
 	}
+
+	s.seen[t] = out
 
 	for i := 0; i < t.NumField(); i++ {
 		var (
@@ -99,19 +112,22 @@ func (s *StructToTS) addType(t reflect.Type, prefix string) (out *Struct) {
 			tf.TsType, tf.KeyType, tf.ValType = "map", stripType(sft.Key()), stripType(sft.Elem())
 
 			if isStruct(sft.Elem()) {
-				tf.ValType = s.addType(sft.Elem(), out.Name).Name
+				tf.ValType = s.addType(sft.Elem(), "", out.Name).Name
 			}
 
 		case k == reflect.Slice, k == reflect.Array:
 			tf.TsType, tf.ValType = "array", stripType(sft.Elem())
 
 			if isStruct(sft.Elem()) {
-				tf.ValType = s.addType(sft.Elem(), out.Name).Name
+				tf.ValType = s.addType(sft.Elem(), "", out.Name).Name
 			}
 
 		case k == reflect.Struct:
+			if isDate(sft) {
+				break
+			}
 			tf.TsType = "object"
-			tf.ValType = s.addType(sft, out.Name).Name
+			tf.ValType = s.addType(sft, "", out.Name).Name
 
 		case k == reflect.Interface:
 			tf.TsType, tf.ValType = "object", ""
@@ -121,24 +137,70 @@ func (s *StructToTS) addType(t reflect.Type, prefix string) (out *Struct) {
 			log.Println("unhandled", k, sft)
 		}
 
-		out.Fields = append(out.Fields, tf)
+		out.Fields = append(out.Fields, &tf)
 	}
 
 	s.structs = append(s.structs, out)
-	s.seen[t] = out
 	return
 }
 
 func (s *StructToTS) RenderTo(w io.Writer) (err error) {
-	fmt.Fprint(w, helpers)
+	buf := bufio.NewWriter(w)
+	defer buf.Flush()
+
+	if s.opts.ES6 {
+		io.WriteString(w, "'use strict';\n")
+	}
+
+	if !s.opts.NoHelpers {
+		io.WriteString(w, "\n// helpers")
+		if s.opts.ES6 {
+			fmt.Fprint(w, es6_helpers)
+		} else {
+			fmt.Fprint(w, ts_helpers)
+		}
+		io.WriteString(w, "\n")
+	}
+
+	io.WriteString(w, "// classes\n")
 	for _, st := range s.structs {
-		if err = st.RenderTo(s.opts, w); err != nil {
+		if err = st.RenderTo(s.opts, buf); err != nil {
 			return
 		}
-		fmt.Fprintln(w)
+		fmt.Fprint(buf, "\n\n")
 	}
+
+	if !s.opts.NoExports {
+		s.RenderExports(buf)
+	}
+
 	return
 }
+
+func (s *StructToTS) RenderExports(w io.Writer) (err error) {
+	io.WriteString(w, "// exports\n")
+
+	export := func(n string) { _, err = fmt.Fprintf(w, "export %s;\n", n) }
+	if s.opts.ES6 {
+		fmt.Fprintf(w, "if (typeof exports === 'undefined') var exports = {};\n\n")
+		export = func(n string) { _, err = fmt.Fprintf(w, "exports.%s = %s;\n", n, n) }
+	}
+
+	for _, st := range s.structs {
+		export(st.Name)
+	}
+
+	if s.opts.NoHelpers {
+		return
+	}
+
+	for _, n := range []string{"ParseDate", "ParseNumber", "FromArray", "ToObject"} {
+		export(n)
+	}
+
+	return
+}
+
 func indirect(t reflect.Type) reflect.Type {
 	k := t.Kind()
 	for k == reflect.Ptr {
@@ -182,23 +244,3 @@ func stripType(t reflect.Type) string {
 	}
 	return n
 }
-
-const helpers = `/* <helpers> */
-const maxUnixTSInSeconds = 9999999999;
-
-function getDate(d: Date | number | string): Date {
-	if (d instanceof Date) return d;
-	if (typeof d === 'number') {
-		if (d > maxUnixTSInSeconds) return new Date(d);
-		return new Date(d * 1000); // go ts
-	}
-	return new Date(d);
-}
-
-function getNumber(v: number | string): number {
-	if (typeof v === 'number') return v;
-	return parseFloat(v || '0');
-}
-/* </helpers> */
-
-`
