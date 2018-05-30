@@ -180,24 +180,27 @@ func (s *StructToTS) RenderTo(w io.Writer) (err error) {
 func (s *StructToTS) RenderExports(w io.Writer) (err error) {
 	io.WriteString(w, "// exports\n")
 
-	export := func(n string) { _, err = fmt.Fprintf(w, "export %s;\n", n) }
+	export := func(n string) { _, err = fmt.Fprintf(w, "%s%s,\n", s.opts.indents[1], n) }
 	if s.opts.ES6 {
 		fmt.Fprintf(w, "if (typeof exports === 'undefined') var exports = {};\n\n")
 		export = func(n string) { _, err = fmt.Fprintf(w, "exports.%s = %s;\n", n, n) }
+	} else {
+		io.WriteString(w, "export {\n")
 	}
 
 	for _, st := range s.structs {
 		export(st.Name)
 	}
 
-	if s.opts.NoHelpers {
-		return
+	if !s.opts.NoHelpers {
+		for _, n := range []string{"ParseDate", "ParseNumber", "FromArray", "ToObject"} {
+			export(n)
+		}
 	}
 
-	for _, n := range []string{"ParseDate", "ParseNumber", "FromArray", "ToObject"} {
-		export(n)
+	if !s.opts.ES6 {
+		io.WriteString(w, "};\n")
 	}
-
 	return
 }
 
