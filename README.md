@@ -18,10 +18,10 @@ Inspired by [tkrajina/typescriptify-golang-structs](https://github.com/tkrajina/
 
 ### There's an extra struct tag to control the output, `ts`, valid options are
 
-*. `-` omit this field.
-*. `date` handle converting `time.Time{}.Unix() <-> javascript Date`.
-*. `no-null` only valid for struct fields, forces creating a new class rather than using `null` in TS.
-*. `null` allows any field type to be `null`.
+* `-` omit this field.
+* `date` handle converting `time.Time{}.Unix() <-> javascript Date`.
+* `,no-null` only valid for struct fields, forces creating a new class rather than using `null` in TS.
+* `,null` allows any field type to be `null`.
 
 ## Example
 
