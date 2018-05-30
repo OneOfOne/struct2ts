@@ -23,7 +23,7 @@ Inspired by [tkrajina/typescriptify-golang-structs](https://github.com/tkrajina/
 *. `no-null` only valid for struct fields, forces creating a new class rather than using `null` in TS.
 *. `null` allows any field type to be `null`.
 
-#### Example struct
+## Example
 
 * Input:
 
@@ -99,8 +99,7 @@ class ComplexStruct {
 ## Command Line Usage
 
 ```
-┏━ oneofone@Ava ❨✪/O/struct2ts❩ ❨master ⚡❩
-┗━━➤ struct2ts -h
+➤ struct2ts -h
 usage: struct2ts [<flags>] [<pkg.struct>...]
 
 Flags:
@@ -130,15 +129,13 @@ Args:
 	[<pkg.struct>]  List of structs to convert (github.com/you/auth/users.User,
 					users.User or users.User:AliasUser).
 
-
-
 ```
 
 ## TODO
 
-* Use [xast](https://github.com/OneOfOne/struct2ts) to skip reflection.
-* ~~Support ES6.~~
+* Use [xast](https://github.com/OneOfOne/xast) to skip reflection.
 * Support annoymous structs.
+* ~~Support ES6.~~
 
 ## License
 

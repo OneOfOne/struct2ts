@@ -47,7 +47,7 @@ function ToObject(o: any, typeOrCfg: any = {}, child = false): any {
 	for (const k of Object.keys(o)) {
 		const v: any = o[k];
 		if (!v) continue;
-		d[k] = ToObject(v, typeOrCfg[k] || '', true);
+		d[k] = ToObject(v, typeOrCfg[k] || {}, true);
 	}
 
 	return d;
@@ -101,7 +101,7 @@ function ToObject(o, typeOrCfg = {}, child = false) {
 		const v = o[k];
 		if (!v)
 			continue;
-		d[k] = ToObject(v, typeOrCfg[k] || '', true);
+		d[k] = ToObject(v, typeOrCfg[k] || {}, true);
 	}
 	return d;
 }
