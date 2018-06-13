@@ -9,6 +9,7 @@ import (
 	"log"
 	"reflect"
 	"strings"
+	"unicode"
 )
 
 type Options struct {
@@ -18,6 +19,7 @@ type Options struct {
 	InterfaceOnly    bool
 
 	MarkOptional  bool
+	NoCapitalize  bool
 	NoConstructor bool
 	NoToObject    bool
 	NoExports     bool
@@ -78,6 +80,9 @@ func (s *StructToTS) addType(t reflect.Type, name, prefix string) (out *Struct) 
 
 	if name == "" {
 		name = t.Name()
+		if !s.opts.NoCapitalize {
+			name = capitalize(name)
+		}
 	}
 
 	out = &Struct{
@@ -246,4 +251,21 @@ func stripType(t reflect.Type) string {
 		n = n[i+1:]
 	}
 	return n
+}
+
+func capitalize(s string) string {
+	var last rune
+	return strings.Map(func(r rune) rune {
+		l := last
+		last = r
+		if unicode.IsSpace(r) {
+			return 0
+		}
+
+		if !unicode.IsLetter(l) && unicode.IsLetter(r) {
+			r = unicode.ToUpper(r)
+		}
+
+		return r
+	}, s)
 }

@@ -44,6 +44,7 @@ func init() {
 	KP.Flag("no-date", "Don't automatically handle time.Unix () <-> JS Date().").Short('D').BoolVar(&opts.NoDate)
 	KP.Flag("no-helpers", "Don't output the helpers.").Short('H').BoolVar(&opts.NoHelpers)
 	KP.Flag("no-default-values", "Don't assign default/zero values in the ctor.").Short('N').BoolVar(&opts.NoAssignDefaults)
+	KP.Flag("no-capitalize", "Don't capitalize TS class names.").Short('C').BoolVar(&opts.NoCapitalize)
 	KP.Flag("interface", "Only generate an interface (disables all the other options).").Short('i').BoolVar(&opts.InterfaceOnly)
 
 	KP.Flag("src-only", "Only output the Go code (helpful if you want to edit it yourself).").Short('s').BoolVar(&srcOnly)
@@ -206,13 +207,14 @@ func runStruct2TS(w io.Writer) error {
 		InterfaceOnly:    {{ .opts.InterfaceOnly    }},
 
 		NoConstructor: {{ .opts.NoConstructor }},
+		NoCapitalize:  {{ .opts.NoCapitalize }},
 		MarkOptional:  {{ .opts.MarkOptional  }},
 		NoToObject:    {{ .opts.NoToObject    }},
 		NoExports:     {{ .opts.NoExports        }},
 		NoHelpers:     {{ .opts.NoHelpers        }},
 		NoDate:        {{ .opts.NoDate        }},
 
-		ES6:        {{ .opts.ES6        }},
+		ES6:           {{ .opts.ES6 }},
 	})
 
 	{{ range $_, $t := .types }}
