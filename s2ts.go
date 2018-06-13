@@ -259,7 +259,7 @@ func capitalize(s string) string {
 		l := last
 		last = r
 		if unicode.IsSpace(r) {
-			return 0
+			return -1
 		}
 
 		if !unicode.IsLetter(l) && unicode.IsLetter(r) {
