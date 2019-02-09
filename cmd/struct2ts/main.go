@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -160,11 +159,13 @@ func render() ([]byte, error) {
 
 func tempFile() (f *os.File, err error) {
 	// if this somehow conflicts, god really hates us.
-	fpath := filepath.Join(os.TempDir(), fmt.Sprintf("s2ts_gen_%d_%d.go", time.Now().UnixNano(), rand.Int63()))
+	fpath := fmt.Sprintf("./s2ts_gen_%d_%d.go", time.Now().UnixNano(), rand.Int63())
 	return os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 }
 
 const fileTmpl = `// this file was automatically generated using struct2ts {{.cmd}}
+// +build ignore
+
 package {{.pkgName}}
 
 import (
