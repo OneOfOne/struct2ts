@@ -116,8 +116,11 @@ func (s *StructToTS) addType(t reflect.Type, name, prefix string) (out *Struct) 
 		case k == reflect.Map:
 			tf.TsType, tf.KeyType, tf.ValType = "map", stripType(sft.Key()), stripType(sft.Elem())
 
-			if isStruct(sft.Elem()) {
+			switch {
+			case isStruct(sft.Elem()):
 				tf.ValType = s.addType(sft.Elem(), "", out.Name).Name
+			case sft.Elem().Kind() == reflect.Interface:
+				tf.ValType = "any"
 			}
 
 		case k == reflect.Slice, k == reflect.Array:

@@ -19,7 +19,11 @@ type ComplexStruct struct {
 	T           time.Time    `json:"t,omitempty"` // automatically handled
 	NullOther   *OtherStruct `json:"o,omitempty"`
 	NoNullOther *OtherStruct `json:"nno,omitempty" ts:",no-null"`
+	Data        Data         `json:"d"`
+	DataPtr     *Data        `json:"dp"`
 }
+
+type Data map[string]interface{}
 
 func ExampleComplexStruct() {
 	s2ts := struct2ts.New(nil)
@@ -74,7 +78,7 @@ func ExampleComplexStruct() {
 	// 	for (const k of Object.keys(o)) {
 	// 		const v: any = o[k];
 	// 		if (!v) continue;
-	// 		d[k] = ToObject(v, typeOrCfg[k] || '', true);
+	// 		d[k] = ToObject(v, typeOrCfg[k] || {}, true);
 	// 	}
 	//
 	// 	return d;
@@ -106,6 +110,8 @@ func ExampleComplexStruct() {
 	// 	t: Date;
 	// 	o: ComplexStructOtherStruct | null;
 	// 	nno: ComplexStructOtherStruct;
+	// 	d: { [key: string]: any };
+	// 	dp: { [key: string]: any } | null;
 	//
 	// 	constructor(data?: any) {
 	// 		const d: any = (data && typeof data === 'object') ? ToObject(data) : {};
@@ -116,6 +122,8 @@ func ExampleComplexStruct() {
 	// 		this.t = ('t' in d) ? ParseDate(d.t) : new Date();
 	// 		this.o = ('o' in d) ? new ComplexStructOtherStruct(d.o) : null;
 	// 		this.nno = new ComplexStructOtherStruct(d.nno);
+	// 		this.d = ('d' in d) ? d.d as { [key: string]: any } : {};
+	// 		this.dp = ('dp' in d) ? d.dp as { [key: string]: any } : null;
 	// 	}
 	//
 	// 	toObject(): any {
@@ -128,10 +136,12 @@ func ExampleComplexStruct() {
 	// }
 	//
 	// // exports
-	// export ComplexStructOtherStruct;
-	// export ComplexStruct;
-	// export ParseDate;
-	// export ParseNumber;
-	// export FromArray;
-	// export ToObject;
+	// export {
+	// 	ComplexStructOtherStruct,
+	// 	ComplexStruct,
+	// 	ParseDate,
+	// 	ParseNumber,
+	// 	FromArray,
+	// 	ToObject,
+	// };
 }
