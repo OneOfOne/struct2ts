@@ -31,6 +31,9 @@ func (s *Struct) RenderTo(opts *Options, w io.Writer) (err error) {
 		if opts.ES6 { // no interfaces in js
 			return
 		}
+		if !opts.NoExports {
+			fmt.Fprintf(w, "export ")
+		}
 		_, err = fmt.Fprintf(w, "interface %s {\n", s.Name)
 	} else {
 		_, err = fmt.Fprintf(w, "class %s {\n", s.Name)

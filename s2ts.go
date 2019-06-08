@@ -170,7 +170,7 @@ func (s *StructToTS) RenderTo(w io.Writer) (err error) {
 		io.WriteString(w, "\n")
 	}
 
-	io.WriteString(w, "// classes\n")
+	io.WriteString(w, "// structs\n")
 	for _, st := range s.structs {
 		if err = st.RenderTo(s.opts, buf); err != nil {
 			return
@@ -186,6 +186,11 @@ func (s *StructToTS) RenderTo(w io.Writer) (err error) {
 }
 
 func (s *StructToTS) RenderExports(w io.Writer) (err error) {
+	if s.opts.InterfaceOnly && s.opts.NoHelpers {
+		// nothing else to export
+		return nil
+	}
+
 	io.WriteString(w, "// exports\n")
 
 	export := func(n string) { _, err = fmt.Fprintf(w, "%s%s,\n", s.opts.indents[1], n) }
@@ -196,8 +201,11 @@ func (s *StructToTS) RenderExports(w io.Writer) (err error) {
 		io.WriteString(w, "export {\n")
 	}
 
-	for _, st := range s.structs {
-		export(st.Name)
+	// interfaces are exported inline!
+	if !s.opts.InterfaceOnly {
+		for _, st := range s.structs {
+			export(st.Name)
+		}
 	}
 
 	if !s.opts.NoHelpers {
