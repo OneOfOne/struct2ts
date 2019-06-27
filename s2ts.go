@@ -68,7 +68,7 @@ func (s *StructToTS) AddWithName(v interface{}, name string) *Struct {
 		t = reflect.TypeOf(v)
 	}
 
-	return s.addType(t, name, "")
+	return s.addType(t, name)
 }
 
 func (s *StructToTS) addTypeFields(out *Struct, t reflect.Type) {
@@ -84,13 +84,13 @@ func (s *StructToTS) addTypeFields(out *Struct, t reflect.Type) {
 			k = sft.Kind()
 		}
 
-		if sf.Anonymous && k == reflect.Struct {
-			log.Println("trying anonymous field:", sft, k)
-			s.addTypeFields(out, sft)
+		if tf.setProps(sf, sft) {
 			continue
 		}
 
-		if tf.setProps(sf, sft) {
+		if sf.Anonymous && k == reflect.Struct && !tf.IsDate {
+			// log.Println("trying anonymous field:", sft, k)
+			s.addTypeFields(out, sft)
 			continue
 		}
 
@@ -100,7 +100,7 @@ func (s *StructToTS) addTypeFields(out *Struct, t reflect.Type) {
 
 			switch {
 			case isStruct(sft.Elem()):
-				tf.ValType = s.addType(sft.Elem(), "", out.Name).Name
+				tf.ValType = s.addType(sft.Elem(), "").Name
 			case sft.Elem().Kind() == reflect.Interface:
 				tf.ValType = "any"
 			}
@@ -109,15 +109,15 @@ func (s *StructToTS) addTypeFields(out *Struct, t reflect.Type) {
 			tf.TsType, tf.ValType = "array", stripType(sft.Elem())
 
 			if isStruct(sft.Elem()) {
-				tf.ValType = s.addType(sft.Elem(), "", out.Name).Name
+				tf.ValType = s.addType(sft.Elem(), "").Name
 			}
 
 		case k == reflect.Struct:
-			if isDate(sft) {
+			if isDate(sft) || tf.IsDate {
 				break
 			}
 			tf.TsType = "object"
-			tf.ValType = s.addType(sft, "", out.Name).Name
+			tf.ValType = s.addType(sft, "").Name
 
 		case k == reflect.Interface:
 			tf.TsType, tf.ValType = "object", ""
@@ -131,7 +131,7 @@ func (s *StructToTS) addTypeFields(out *Struct, t reflect.Type) {
 	}
 }
 
-func (s *StructToTS) addType(t reflect.Type, name, prefix string) (out *Struct) {
+func (s *StructToTS) addType(t reflect.Type, name string) (out *Struct) {
 	t = indirect(t)
 
 	if out = s.seen[t]; out != nil {
@@ -146,16 +146,17 @@ func (s *StructToTS) addType(t reflect.Type, name, prefix string) (out *Struct) 
 	}
 
 	out = &Struct{
-		Name:   prefix + name,
+		Name:   name,
 		Fields: make([]*Field, 0, t.NumField()),
 
 		t: t,
 	}
 
-	log.Println("building struct:", out.Name)
+	// log.Println("building struct:", out.Name)
 	s.addTypeFields(out, t)
 	s.seen[t] = out
 	s.structs = append(s.structs, out)
+	// log.Println("/building struct:", out.Name)
 	return
 }
 

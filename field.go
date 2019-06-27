@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"go/ast"
 	"io"
-	"log"
 	"reflect"
 	"strings"
 )
@@ -135,9 +134,9 @@ func (f *Field) setProps(sf reflect.StructField, sft reflect.Type) (ignore bool)
 		return true
 	}
 
-	if sf.Anonymous {
-		log.Println("anonymous:", sf.Name, sf.Type.Kind())
-	}
+	// if sf.Anonymous {
+	// 	log.Println("anonymous:", sf.Name, sf.Type.Kind())
+	// }
 
 	var (
 		jsonTag = strings.Split(sf.Tag.Get("json"), ",")
@@ -150,7 +149,6 @@ func (f *Field) setProps(sf reflect.StructField, sft reflect.Type) (ignore bool)
 
 	if f.Name = sf.Name; len(jsonTag) > 0 && jsonTag[0] != "" {
 		f.Name = jsonTag[0]
-
 	}
 
 	f.IsDate = isDate(sft) || len(tsTag) > 0 && tsTag[0] == "date" || sft.Kind() == reflect.Int64 && strings.HasSuffix(f.Name, "TS")
