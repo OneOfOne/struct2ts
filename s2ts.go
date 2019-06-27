@@ -71,41 +71,23 @@ func (s *StructToTS) AddWithName(v interface{}, name string) *Struct {
 	return s.addType(t, name, "")
 }
 
-func (s *StructToTS) addType(t reflect.Type, name, prefix string) (out *Struct) {
-	t = indirect(t)
-
-	if out = s.seen[t]; out != nil {
-		return out
-	}
-
-	if name == "" {
-		name = t.Name()
-		if !s.opts.NoCapitalize {
-			name = capitalize(name)
-		}
-	}
-
-	out = &Struct{
-		Name:   prefix + name,
-		Fields: make([]*Field, 0, t.NumField()),
-
-		t: t,
-	}
-
-	s.seen[t] = out
-
+func (s *StructToTS) addTypeFields(out *Struct, t reflect.Type) {
 	for i := 0; i < t.NumField(); i++ {
-		var (
-			sf  = t.Field(i)
-			sft = sf.Type
-			tf  Field
-			k   = sft.Kind()
-		)
+		sf := t.Field(i)
+		sft := sf.Type
+		k := sft.Kind()
+		var tf Field
 
 		if k == reflect.Ptr {
 			tf.CanBeNull = true
 			sft = indirect(sft)
 			k = sft.Kind()
+		}
+
+		if sf.Anonymous && k == reflect.Struct {
+			log.Println("trying anonymous field:", sft, k)
+			s.addTypeFields(out, sft)
+			continue
 		}
 
 		if tf.setProps(sf, sft) {
@@ -147,7 +129,32 @@ func (s *StructToTS) addType(t reflect.Type, name, prefix string) (out *Struct) 
 
 		out.Fields = append(out.Fields, &tf)
 	}
+}
 
+func (s *StructToTS) addType(t reflect.Type, name, prefix string) (out *Struct) {
+	t = indirect(t)
+
+	if out = s.seen[t]; out != nil {
+		return out
+	}
+
+	if name == "" {
+		name = t.Name()
+		if !s.opts.NoCapitalize {
+			name = capitalize(name)
+		}
+	}
+
+	out = &Struct{
+		Name:   prefix + name,
+		Fields: make([]*Field, 0, t.NumField()),
+
+		t: t,
+	}
+
+	log.Println("building struct:", out.Name)
+	s.addTypeFields(out, t)
+	s.seen[t] = out
 	s.structs = append(s.structs, out)
 	return
 }

@@ -136,8 +136,7 @@ func (f *Field) setProps(sf reflect.StructField, sft reflect.Type) (ignore bool)
 	}
 
 	if sf.Anonymous {
-		log.Println("anonymous structs aren't supported, yet.")
-		return true
+		log.Println("anonymous:", sf.Name, sf.Type.Kind())
 	}
 
 	var (
