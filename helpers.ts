@@ -15,14 +15,14 @@ function ParseNumber(v: number | string, isInt = false): number {
 	return (isInt ? parseInt(v) : parseFloat(v)) || 0;
 }
 
-function FromArray<T>(Ctor: { new(v: any): T }, data?: any[] | any, def = null): T[] | null {
+function FromArray<T>(Ctor: { new (v: any): T }, data?: any[] | any, def = null): T[] | null {
 	if (!data || !Object.keys(data).length) return def;
 	const d = Array.isArray(data) ? data : [data];
 	return d.map((v: any) => new Ctor(v));
 }
 
 function ToObject(o: any, typeOrCfg: any = {}, child = false): any {
-	if (!o) return null;
+	if (o == null) return null;
 	if (typeof o.toObject === 'function' && child) return o.toObject();
 
 	switch (typeof o) {
