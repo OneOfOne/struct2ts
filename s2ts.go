@@ -68,10 +68,70 @@ func (s *StructToTS) AddWithName(v interface{}, name string) *Struct {
 		t = reflect.TypeOf(v)
 	}
 
-	return s.addType(t, name, "")
+	return s.addType(t, name)
 }
 
-func (s *StructToTS) addType(t reflect.Type, name, prefix string) (out *Struct) {
+func (s *StructToTS) addTypeFields(out *Struct, t reflect.Type) {
+	for i := 0; i < t.NumField(); i++ {
+		sf := t.Field(i)
+		sft := sf.Type
+		k := sft.Kind()
+		var tf Field
+
+		if k == reflect.Ptr {
+			tf.CanBeNull = true
+			sft = indirect(sft)
+			k = sft.Kind()
+		}
+
+		if tf.setProps(sf, sft) {
+			continue
+		}
+
+		if sf.Anonymous && k == reflect.Struct && !tf.IsDate {
+			// log.Println("trying anonymous field:", sft, k)
+			s.addTypeFields(out, sft)
+			continue
+		}
+
+		switch {
+		case k == reflect.Map:
+			tf.TsType, tf.KeyType, tf.ValType = "map", stripType(sft.Key()), stripType(sft.Elem())
+
+			switch {
+			case isStruct(sft.Elem()):
+				tf.ValType = s.addType(sft.Elem(), "").Name
+			case sft.Elem().Kind() == reflect.Interface:
+				tf.ValType = "any"
+			}
+
+		case k == reflect.Slice, k == reflect.Array:
+			tf.TsType, tf.ValType = "array", stripType(sft.Elem())
+
+			if isStruct(sft.Elem()) {
+				tf.ValType = s.addType(sft.Elem(), "").Name
+			}
+
+		case k == reflect.Struct:
+			if isDate(sft) || tf.IsDate {
+				break
+			}
+			tf.TsType = "object"
+			tf.ValType = s.addType(sft, "").Name
+
+		case k == reflect.Interface:
+			tf.TsType, tf.ValType = "object", ""
+
+		case tf.TsType != "": // native type
+		default:
+			log.Println("unhandled", k, sft)
+		}
+
+		out.Fields = append(out.Fields, &tf)
+	}
+}
+
+func (s *StructToTS) addType(t reflect.Type, name string) (out *Struct) {
 	t = indirect(t)
 
 	if out = s.seen[t]; out != nil {
@@ -86,69 +146,17 @@ func (s *StructToTS) addType(t reflect.Type, name, prefix string) (out *Struct) 
 	}
 
 	out = &Struct{
-		Name:   prefix + name,
+		Name:   name,
 		Fields: make([]*Field, 0, t.NumField()),
 
 		t: t,
 	}
 
+	// log.Println("building struct:", out.Name)
+	s.addTypeFields(out, t)
 	s.seen[t] = out
-
-	for i := 0; i < t.NumField(); i++ {
-		var (
-			sf  = t.Field(i)
-			sft = sf.Type
-			tf  Field
-			k   = sft.Kind()
-		)
-
-		if k == reflect.Ptr {
-			tf.CanBeNull = true
-			sft = indirect(sft)
-			k = sft.Kind()
-		}
-
-		if tf.setProps(sf, sft) {
-			continue
-		}
-
-		switch {
-		case k == reflect.Map:
-			tf.TsType, tf.KeyType, tf.ValType = "map", stripType(sft.Key()), stripType(sft.Elem())
-
-			switch {
-			case isStruct(sft.Elem()):
-				tf.ValType = s.addType(sft.Elem(), "", out.Name).Name
-			case sft.Elem().Kind() == reflect.Interface:
-				tf.ValType = "any"
-			}
-
-		case k == reflect.Slice, k == reflect.Array:
-			tf.TsType, tf.ValType = "array", stripType(sft.Elem())
-
-			if isStruct(sft.Elem()) {
-				tf.ValType = s.addType(sft.Elem(), "", out.Name).Name
-			}
-
-		case k == reflect.Struct:
-			if isDate(sft) {
-				break
-			}
-			tf.TsType = "object"
-			tf.ValType = s.addType(sft, "", out.Name).Name
-
-		case k == reflect.Interface:
-			tf.TsType, tf.ValType = "object", ""
-
-		case tf.TsType != "": // native type
-		default:
-			log.Println("unhandled", k, sft)
-		}
-
-		out.Fields = append(out.Fields, &tf)
-	}
-
 	s.structs = append(s.structs, out)
+	// log.Println("/building struct:", out.Name)
 	return
 }
 
