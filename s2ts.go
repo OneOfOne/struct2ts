@@ -148,13 +148,12 @@ func (s *StructToTS) addType(t reflect.Type, name string) (out *Struct) {
 	out = &Struct{
 		Name:   name,
 		Fields: make([]*Field, 0, t.NumField()),
-
-		t: t,
+		t:      t,
 	}
 
+	s.seen[t] = out
 	// log.Println("building struct:", out.Name)
 	s.addTypeFields(out, t)
-	s.seen[t] = out
 	s.structs = append(s.structs, out)
 	// log.Println("/building struct:", out.Name)
 	return
