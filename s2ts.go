@@ -106,6 +106,7 @@ func (s *StructToTS) addTypeFields(out *Struct, t reflect.Type) {
 			}
 
 		case k == reflect.Slice, k == reflect.Array:
+			tf.CanBeNull = true
 			tf.TsType, tf.ValType = "array", stripType(sft.Elem())
 
 			if isStruct(sft.Elem()) {
