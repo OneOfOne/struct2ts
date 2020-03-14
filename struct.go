@@ -1,6 +1,7 @@
 package struct2ts
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
@@ -57,7 +58,36 @@ func (s *Struct) RenderTo(opts *Options, w io.Writer) (err error) {
 		return
 	}
 
+	if err = s.RenderCustom(opts, w); err != nil {
+		return
+	}
+
 	_, err = fmt.Fprint(w, "}")
+	return
+}
+
+type CustomTypescript interface {
+	RenderCustomTypescript(w io.Writer) (err error)
+}
+
+func (s *Struct) RenderCustom(opts *Options, w io.Writer) (err error) {
+	ctit := reflect.TypeOf(CustomTypescript(nil))
+	if s.t.Implements(ctit) {
+		m, ok := s.t.MethodByName("RenderCustomTypescript")
+		if !ok {
+			return errors.New("couldn't get method RenderCustomTypescript")
+		}
+		o := reflect.New(s.t)
+		wv := reflect.ValueOf(w)
+		r := m.Func.Call([]reflect.Value{o, wv})
+		if len(r) > 0 && !r[0].IsNil() {
+			switch r0t := r[0].Interface().(type) {
+			case error:
+				return r0t
+			}
+		}
+	}
+
 	return
 }
 
