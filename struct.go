@@ -71,6 +71,7 @@ type CustomTypescript interface {
 }
 
 func (s *Struct) RenderCustom(opts *Options, w io.Writer) (err error) {
+	ww := newTabScanner(w, opts.indents[1])
 	ctit := reflect.TypeOf((*CustomTypescript)(nil)).Elem()
 	var implementingType reflect.Type = nil
 	if s.t.Implements(ctit) {
@@ -84,12 +85,12 @@ func (s *Struct) RenderCustom(opts *Options, w io.Writer) (err error) {
 		if !ok {
 			return errors.New("couldn't get method RenderCustomTypescript")
 		}
-		_, err = fmt.Fprintf(w, "\n")
+		_, err = fmt.Fprintf(ww, "\n")
 		o := reflect.New(s.t)
 		if implementingType.Kind() != reflect.Ptr {
 			o = o.Elem()
 		}
-		wv := reflect.ValueOf(w)
+		wv := reflect.ValueOf(ww)
 		r := m.Func.Call([]reflect.Value{o, wv})
 		if len(r) > 0 && !r[0].IsNil() {
 			switch r0t := r[0].Interface().(type) {
