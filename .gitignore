@@ -4,3 +4,4 @@
 /cache/
 /debug
 /testdata/testmodel1/s2ts_gen_*.go
+/helpers.js

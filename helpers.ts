@@ -43,7 +43,8 @@ function ToObject(o: any, typeOrCfg: any = {}, child = false): any {
 
 	for (const k of Object.keys(o)) {
 		const v: any = o[k];
-		if (!v) continue;
+		if (v === undefined) continue;
+		if (v === null) continue;
 		d[k] = ToObject(v, typeOrCfg[k] || {}, true);
 	}
 
