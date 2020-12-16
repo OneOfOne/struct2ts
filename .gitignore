@@ -1,6 +1,7 @@
-*.txt
-*.pprof
-cmap2/
-cache/
-debug
+/*.txt
+/*.pprof
+/cmap2/
+/cache/
+/debug
+/testdata/testmodel1/s2ts_gen_*.go
 /helpers.js

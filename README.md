@@ -131,6 +131,18 @@ Args:
 
 ```
 
+## Advanced
+
+### Custom output per model
+
+```golang
+type CustomTypescript interface {
+	RenderCustomTypescript(w io.Writer) (err error)
+}
+```
+If your model implements a ```RenderCustomTypescript(w io.Writer) (err error)``` function it will inject what ever you 
+write to the writer at the end of the model. struct2ts will handle the first level of indenting for you.
+
 ## TODO
 
 * Use [xast](https://github.com/OneOfOne/xast) to skip reflection.

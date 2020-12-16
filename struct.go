@@ -1,6 +1,7 @@
 package struct2ts
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
@@ -57,7 +58,49 @@ func (s *Struct) RenderTo(opts *Options, w io.Writer) (err error) {
 		return
 	}
 
+	if err = s.RenderCustom(opts, w); err != nil {
+		return
+	}
+
 	_, err = fmt.Fprint(w, "}")
+	return
+}
+
+type CustomTypescript interface {
+	RenderCustomTypescript(w io.Writer) (err error)
+}
+
+func (s *Struct) RenderCustom(opts *Options, w io.Writer) (err error) {
+	ww := newTabScanner(w, opts.indents[1])
+	ctit := reflect.TypeOf((*CustomTypescript)(nil)).Elem()
+	var implementingType reflect.Type = nil
+	if s.t.Implements(ctit) {
+		implementingType = ctit
+	}
+	if reflect.PtrTo(s.t).Implements(ctit) {
+		implementingType = reflect.PtrTo(s.t)
+	}
+	if implementingType != nil {
+		m, ok := implementingType.MethodByName("RenderCustomTypescript")
+		if !ok {
+			return errors.New("couldn't get method RenderCustomTypescript")
+		}
+		_, err = fmt.Fprintf(ww, "\n")
+		o := reflect.New(s.t)
+		if implementingType.Kind() != reflect.Ptr {
+			o = o.Elem()
+		}
+		wv := reflect.ValueOf(ww)
+		r := m.Func.Call([]reflect.Value{o, wv})
+		if len(r) > 0 && !r[0].IsNil() {
+			switch r0t := r[0].Interface().(type) {
+			case error:
+				return r0t
+			}
+		}
+		_, err = fmt.Fprintf(w, "\n")
+	}
+
 	return
 }
 
