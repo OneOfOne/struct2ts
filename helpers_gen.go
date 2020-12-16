@@ -18,14 +18,14 @@ function ParseNumber(v: number | string, isInt = false): number {
 	return (isInt ? parseInt(v) : parseFloat(v)) || 0;
 }
 
-function FromArray<T>(Ctor: { new(v: any): T }, data?: any[] | any, def = null): T[] | null {
+function FromArray<T>(Ctor: { new (v: any): T }, data?: any[] | any, def = null): T[] | null {
 	if (!data || !Object.keys(data).length) return def;
 	const d = Array.isArray(data) ? data : [data];
 	return d.map((v: any) => new Ctor(v));
 }
 
 function ToObject(o: any, typeOrCfg: any = {}, child = false): any {
-	if (!o) return null;
+	if (o == null) return null;
 	if (typeof o.toObject === 'function' && child) return o.toObject();
 
 	switch (typeof o) {
@@ -46,7 +46,8 @@ function ToObject(o: any, typeOrCfg: any = {}, child = false): any {
 
 	for (const k of Object.keys(o)) {
 		const v: any = o[k];
-		if (!v) continue;
+		if (v === undefined) continue;
+		if (v === null) continue;
 		d[k] = ToObject(v, typeOrCfg[k] || {}, true);
 	}
 
@@ -80,7 +81,7 @@ function FromArray(Ctor, data, def = null) {
 	return d.map((v) => new Ctor(v));
 }
 function ToObject(o, typeOrCfg = {}, child = false) {
-	if (!o)
+	if (o == null)
 		return null;
 	if (typeof o.toObject === 'function' && child)
 		return o.toObject();
@@ -99,7 +100,9 @@ function ToObject(o, typeOrCfg = {}, child = false) {
 	const d = {};
 	for (const k of Object.keys(o)) {
 		const v = o[k];
-		if (!v)
+		if (v === undefined)
+			continue;
+		if (v === null)
 			continue;
 		d[k] = ToObject(v, typeOrCfg[k] || {}, true);
 	}
