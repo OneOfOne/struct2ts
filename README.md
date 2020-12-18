@@ -143,6 +143,18 @@ type CustomTypescript interface {
 If your model implements a ```RenderCustomTypescript(w io.Writer) (err error)``` function it will inject what ever you 
 write to the writer at the end of the model. struct2ts will handle the first level of indenting for you.
 
+
+### Custom type
+
+```golang
+type CustomTypescriptTyper interface {
+	CustomTypescriptType() string
+}
+```
+If your model implements a ```CustomTypescriptType() string``` function it will inject what ever you 
+return as the used reference type. Only necessary when using custom  ```json.(Un)Marshal``` code.
+
+
 ## TODO
 
 * Use [xast](https://github.com/OneOfOne/xast) to skip reflection.

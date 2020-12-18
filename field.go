@@ -170,7 +170,7 @@ func (f *Field) setProps(sf reflect.StructField, sft reflect.Type) (ignore, cust
 
 	f.IsOptional = f.IsOptional || len(jsonTag) > 1 && jsonTag[1] == "omitempty"
 
-	ctit := reflect.TypeOf((*CustomType)(nil)).Elem()
+	ctit := reflect.TypeOf((*CustomTypeScriptTyper)(nil)).Elem()
 	var implementingType reflect.Type = nil
 	if sft.Implements(ctit) {
 		implementingType = ctit
@@ -179,7 +179,7 @@ func (f *Field) setProps(sf reflect.StructField, sft reflect.Type) (ignore, cust
 		implementingType = reflect.PtrTo(sft)
 	}
 	if implementingType != nil {
-		m, ok := implementingType.MethodByName("RenderCustomType")
+		m, ok := implementingType.MethodByName("CustomTypeScriptType")
 		if !ok {
 			f.TsType = stripType(sft)
 		}

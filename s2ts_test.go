@@ -1,7 +1,8 @@
 package struct2ts_test
 
 import (
-	"os"
+	"bytes"
+	"testing"
 	"time"
 
 	"github.com/OneOfOne/struct2ts"
@@ -21,15 +22,18 @@ type ComplexStruct struct {
 	NoNullOther *OtherStruct `json:"nno,omitempty" ts:",no-null"`
 	Data        Data         `json:"d"`
 	DataPtr     *Data        `json:"dp"`
+	CT          CustomType   `json:"ct"`
 }
 
 type Data map[string]interface{}
 
-func ExampleComplexStruct() {
+func TestComplexStruct(t *testing.T) {
 	s2ts := struct2ts.New(nil)
 	s2ts.Add(ComplexStruct{})
-	s2ts.RenderTo(os.Stdout)
 
+	var buf bytes.Buffer
+
+	s2ts.RenderTo(&buf)
 	// Output:
 	// // helpers
 	// const maxUnixTSInSeconds = 9999999999;
@@ -144,4 +148,21 @@ func ExampleComplexStruct() {
 	// 	FromArray,
 	// 	ToObject,
 	// };
+}
+
+type CustomType struct {
+	Value string
+}
+
+func (c *CustomType) CustomTypeScriptType() string {
+	return "string"
+}
+
+func (s *CustomType) UnmarshalText(text []byte) error {
+	s.Value = string(text)
+	return nil
+}
+
+func (s CustomType) MarshalText() ([]byte, error) {
+	return []byte(s.Value), nil
 }

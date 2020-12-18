@@ -84,7 +84,8 @@ func (s *StructToTS) addTypeFields(out *Struct, t reflect.Type) {
 			k = sft.Kind()
 		}
 
-		if tf.setProps(sf, sft) {
+		ignore, customType, err := tf.setProps(sf, sft)
+		if err != nil || ignore {
 			continue
 		}
 
@@ -95,6 +96,10 @@ func (s *StructToTS) addTypeFields(out *Struct, t reflect.Type) {
 		}
 
 		switch {
+		case customType:
+			if isStruct(sft) && !IsNative(tf.TsType) {
+				tf.ValType = s.addType(sft, "").Name
+			}
 		case k == reflect.Map:
 			tf.TsType, tf.KeyType, tf.ValType = "map", stripType(sft.Key()), stripType(sft.Elem())
 
@@ -112,7 +117,6 @@ func (s *StructToTS) addTypeFields(out *Struct, t reflect.Type) {
 			if isStruct(sft.Elem()) {
 				tf.ValType = s.addType(sft.Elem(), "").Name
 			}
-
 		case k == reflect.Struct:
 			if isDate(sft) || tf.IsDate {
 				break
