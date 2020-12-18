@@ -129,9 +129,13 @@ func (f *Field) IsNative() bool {
 	}
 }
 
-func (f *Field) setProps(sf reflect.StructField, sft reflect.Type) (ignore bool) {
+type CustomTypeScriptTyper interface {
+	CustomTypeScriptType() string
+}
+
+func (f *Field) setProps(sf reflect.StructField, sft reflect.Type) (ignore, customType bool, err error) {
 	if len(sf.Name) > 0 && !ast.IsExported(sf.Name) {
-		return true
+		return true, false, nil
 	}
 
 	// if sf.Anonymous {
@@ -165,7 +169,32 @@ func (f *Field) setProps(sf reflect.StructField, sft reflect.Type) (ignore bool)
 	}
 
 	f.IsOptional = f.IsOptional || len(jsonTag) > 1 && jsonTag[1] == "omitempty"
-	f.TsType = stripType(sft)
+
+	ctit := reflect.TypeOf((*CustomType)(nil)).Elem()
+	var implementingType reflect.Type = nil
+	if sft.Implements(ctit) {
+		implementingType = ctit
+	}
+	if reflect.PtrTo(sft).Implements(ctit) {
+		implementingType = reflect.PtrTo(sft)
+	}
+	if implementingType != nil {
+		m, ok := implementingType.MethodByName("RenderCustomType")
+		if !ok {
+			f.TsType = stripType(sft)
+		}
+
+		o := reflect.New(sft)
+		if implementingType.Kind() != reflect.Ptr {
+			o = o.Elem()
+		}
+
+		r := m.Func.Call([]reflect.Value{o})
+		f.TsType = r[0].String()
+		customType = true
+	} else {
+		f.TsType = stripType(sft)
+	}
 
 	return
 }
