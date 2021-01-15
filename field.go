@@ -16,6 +16,7 @@ type Field struct {
 	CanBeNull  bool   `json:"canBeNull"`
 	IsOptional bool   `json:"isOptional"`
 	IsDate     bool   `json:"isDate"`
+	IsRaw      bool   `json:"isRaw"`
 }
 
 func (f *Field) Type(opts *Options, noSuffix bool) (out string) {
@@ -33,6 +34,10 @@ func (f *Field) Type(opts *Options, noSuffix bool) (out string) {
 
 	if f.IsDate && !opts.NoDate {
 		out = "Date"
+	}
+
+	if f.IsRaw {
+		out = "any"
 	}
 
 	if !noSuffix && f.CanBeNull {
@@ -113,6 +118,10 @@ func (f *Field) DefaultValue() string {
 		return "new Date()"
 	}
 
+	if f.IsRaw {
+		return "null"
+	}
+
 	if f.TsType == "object" && f.ValType != "" {
 		return "new " + f.ValType + "()"
 	}
@@ -152,6 +161,11 @@ func (f *Field) setProps(sf reflect.StructField, sft reflect.Type) (ignore bool)
 	}
 
 	f.IsDate = isDate(sft) || len(tsTag) > 0 && tsTag[0] == "date" || sft.Kind() == reflect.Int64 && strings.HasSuffix(f.Name, "TS")
+
+	f.IsRaw = isRaw(sft) || len(tsTag) > 0 && tsTag[0] == "any"
+	if f.IsRaw {
+		f.CanBeNull = false
+	}
 
 	if len(tsTag) > 1 {
 		switch tsTag[1] {
@@ -193,4 +207,7 @@ func TypeSuffix(t string, es6, as bool) string {
 
 func isDate(t reflect.Type) bool {
 	return t.Name() == "Time" && t.PkgPath() == "time"
+}
+func isRaw(t reflect.Type) bool {
+	return t.Name() == "RawMessage" && t.PkgPath() == "encoding/json"
 }
