@@ -1,6 +1,7 @@
 package struct2ts_test
 
 import (
+	"encoding/json"
 	"os"
 	"time"
 
@@ -12,15 +13,16 @@ type OtherStruct struct {
 }
 
 type ComplexStruct struct {
-	S           string       `json:"s,omitempty"`
-	I           int          `json:"i,omitempty"`
-	F           float64      `json:"f,omitempty"`
-	TS          *int64       `json:"ts,omitempty" ts:"date,null"`
-	T           time.Time    `json:"t,omitempty"` // automatically handled
-	NullOther   *OtherStruct `json:"o,omitempty"`
-	NoNullOther *OtherStruct `json:"nno,omitempty" ts:",no-null"`
-	Data        Data         `json:"d"`
-	DataPtr     *Data        `json:"dp"`
+	S           string           `json:"s,omitempty"`
+	I           int              `json:"i,omitempty"`
+	F           float64          `json:"f,omitempty"`
+	TS          *int64           `json:"ts,omitempty" ts:"date,null"`
+	T           time.Time        `json:"t,omitempty"` // automatically handled
+	NullOther   *OtherStruct     `json:"o,omitempty"`
+	NoNullOther *OtherStruct     `json:"nno,omitempty" ts:",no-null"`
+	Data        Data             `json:"d"`
+	DataPtr     *Data            `json:"dp"`
+	RawPtr      *json.RawMessage `json:"rm"`
 }
 
 type Data map[string]interface{}
